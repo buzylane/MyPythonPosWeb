@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Store Management System</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+            <div class="navbar-nav ml-auto">
+                <a class="nav-item nav-link active" href="{{ url_for('dashboard') }}">Dashboard</a>
+                <a class="nav-item nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <h1>Order Details</h1>
+        <div class="mb-3">
+            <button type="button" class="btn btn-secondary" onclick="filterRecords()">Filter Records</button>
+            <button type="button" class="btn btn-success" onclick="addRecord()">Add Record</button>
+        </div>
+        <form method="post">
+            {% macro form_group(field_name, value, label) %}
+            <div class="form-group">
+                <label for="{{ field_name }}">{{ label }}</label>
+                <input type="text" class="form-control" id="{{ field_name }}" name="{{ field_name }}" value="{{ value }}" required>
+            </div>
+            {% endmacro %}
+
+            {{ form_group('Transaction_Date', order[1], 'Transaction Date') }}
+            {{ form_group('Source', order[2], 'Source') }}
+            {{ form_group('Service_Type', order[3], 'Service Type') }}
+            {{ form_group('Customer_Name', order[4], 'Customer Name') }}
+            {{ form_group('Customer_Contact', order[5], 'Customer Contact') }}
+            {{ form_group('Order', order[6], 'Order Notes') }}
+            {{ form_group('Amount', order[7], 'Amount') }}
+            {{ form_group('Discount', order[8], 'Discount') }}
+            {{ form_group('Total_Amount', order[9], 'Total Amount') }}
+            {{ form_group('Status', order[10], 'Status') }}
+            {{ form_group('Payment', order[11], 'Payment') }}
+            {{ form_group('External_Payment', order[12], 'External Payment') }}
+            <button type="submit" class="btn btn-primary">Update Order</button>
+        </form>
+    </div>
+
+    <script>
+        function filterRecords() {
+            // Implement the functionality to filter records
+            alert('Filter Records functionality is not implemented yet.');
+        }
+
+        function addRecord() {
+            // Implement the functionality to add a new record
+            alert('Add Record functionality is not implemented yet.');
+        }
+    </script>
+{% endblock %}

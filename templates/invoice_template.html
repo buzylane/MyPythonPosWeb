@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Invoice</title>
+</head>
+<body>
+    <h1>Invoice for Order #{{ order[0] }}</h1>
+    <p>Date: {{ order[1] }}</p>
+    <p>Customer Name: {{ order[2] }}</p>
+    <p>Phone: {{ order[3] }}</p>
+    <p>Total Amount: {{ order[4] }}</p>
+    <p>Discount: {{ order[5] }}</p>
+    <p>Net Amount: {{ order[6] }}</p>
+    <p>Order Source: {{ order[7] }}</p>
+    <p>Salesperson: {{ order[8] }}</p>
+
+    <h2>Products</h2>
+    <ul>
+    {% for product in products %}
+        <li>{{ product[0] }} - Quantity: {{ product[1] }}, Unit Price: {{ product[2] }}, Subtotal: {{ product[3] }}</li>
+    {% endfor %}
+    </ul>
+</body>
+</html>

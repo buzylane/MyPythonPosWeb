@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tabledit/1.2.3/jquery.tabledit.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        .ui-autocomplete {
+            z-index: 1050; /* Ensure this is higher than the modal's z-index */
+        }
+        .dataTables_wrapper .dataTables_filter {
+            float: right;
+        }
+        .dataTables_wrapper .dataTables_length {
+            float: left;
+        }
+        .dataTables_wrapper .dataTables_info {
+            float: left;
+            margin-top: 10px;
+        }
+        .dataTables_wrapper .dataTables_paginate {
+            float: right;
+            margin-top: 10px;
+        }
+        .dataTables_wrapper .dataTables_scroll {
+            overflow: auto;
+        }
+        #editProductImageDisplay {
+        width: 100%;  /* This will make the image take the full width of its container */
+        height: auto;  /* This maintains the aspect ratio */
+        max-height: 200px;  /* Restrict the height to avoid overly large images */
+        object-fit: contain;  /* Ensures the image is scaled correctly within the bounds */
+        border: 1px solid #ddd;  /* Adds a subtle border around the image */
+        padding: 5px;  /* Adds some spacing around the image */
+        background-color: #fff;  /* Optional: Sets a background color */
+    }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" href="#">{{ session.business_name or 'STORE MANAGEMENT SYSTEM' }}</a>
+        <div class="navbar-nav">
+            <a class="nav-item nav-link" href="/dashboard">Dashboard</a>
+            <a class="nav-item nav-link active" href="/inventory">Inventory</a>
+            <a class="nav-item nav-link" href="/orders">Orders</a>
+            <a class="nav-item nav-link" href="/logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <h2>Inventory Management</h2>
+        <button type="button" class="btn btn-primary mb-2" data-toggle="modal" data-target="#addProductModal">Add Product</button>
+        <div class="table-responsive">
+            <table id="inventoryTable" class="table table-striped table-bordered" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Product ID</th>
+                        <th>Name</th>
+                        <th>Variant</th>
+                        <th>Quantity</th>
+                        <th>Branch Qty</th>
+                        <th>Retail Price</th>
+                        <th>Promo Price</th>
+                        <th>Wholesale Price</th>
+                        <th>Supplier Price</th>
+                        <th>Retail Profit</th>
+                        <th>Promo Profit</th>
+                        <th>Wholesale Profit</th>
+                        <th>Category</th>
+                        <th>Subcategory</th>
+                        <th>Supplier</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-container mt-4">
+            <div>
+                <h3>Product Categories</h3>
+                <button type="button" class="btn btn-primary mb-2" data-toggle="modal" data-target="#addCategoryModal">Add Category</button>
+                <div class="table-responsive">
+                    <table id="categoryTable" class="table table-striped table-bordered" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Category ID</th>
+                                <th>Category Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div>
+                <h3>Product Subcategories</h3>
+                <button type="button" class="btn btn-primary mb-2" data-toggle="modal" data-target="#addSubcategoryModal">Add Subcategory</button>
+                <div class="table-responsive">
+                    <table id="subcategoryTable" class="table table-striped table-bordered" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Subcategory ID</th>
+                                <th>Subcategory Name</th>
+                                <th>Category ID</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div>
+                <h3>Suppliers</h3>
+                <button type="button" class="btn btn-primary mb-2" data-toggle="modal" data-target="#addSupplierModal">Add Supplier</button>
+                <div class="table-responsive">
+                    <table id="supplierTable" class="table table-striped table-bordered" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Supplier ID</th>
+                                <th>Supplier Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Edit Product Modal -->
+<div class="modal fade" id="editProductModal" tabindex="-1" role="dialog" aria-labelledby="editProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProductModalLabel">Edit Product</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editProductForm">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="editProductName">Product ID</label>
+                                <input type="text" class="form-control" id="editProductId" name="product_id" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="editProductName">Product Name</label>
+                                <input type="text" class="form-control" id="editProductName" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="editProductVariant">Variant</label>
+                                <input type="text" class="form-control" id="editProductVariant" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="editProductQuantity">Quantity</label>
+                                <input type="number" class="form-control" id="editProductQuantity" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="editProductRetailPrice">Retail Price</label>
+                                <input type="text" class="form-control" id="editProductRetailPrice" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="editProductPromoPrice">Promo Price</label>
+                                <input type="text" class="form-control" id="editProductPromoPrice">
+                            </div>
+                            <div class="form-group">
+                                <label for="editProductWholesalePrice">Wholesale Price</label>
+                                <input type="text" class="form-control" id="editProductWholesalePrice">
+                            </div>
+                            <div class="form-group">
+                                <label for="editProductSupplierPrice">Supplier Price</label>
+                                <input type="text" class="form-control" id="editProductSupplierPrice">
+                            </div>
+                            <div class="form-group">
+                                <label for="editProductImageDisplay">Current Image:</label>
+                                <img id="editProductImageDisplay" src="" alt="Product Image" class="img-fluid">
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="editProductCategory">Category</label>
+                                <select class="form-control" id="editProductCategory" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="editProductSubcategory">Subcategory</label>
+                                <select class="form-control" id="editProductSubcategory" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="editProductSupplier">Supplier</label>
+                                <select class="form-control" id="editProductSupplier" required></select>
+                                <input type="hidden" id="editSupplierId">
+                            </div>
+                            <div class="form-group">
+                                <label for="editProductCode">Product Code</label>
+                                <input type="text" class="form-control" id="editProductCode">
+                            </div>
+                            <div class="form-group">
+                                <label for="editProductRetailProfit">Retail Profit</label>
+                                <input type="text" class="form-control" id="editProductRetailProfit" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label for="editProductWholesaleProfit">Wholesale Profit</label>
+                                <input type="text" class="form-control" id="editProductWholesaleProfit" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label for="editProductPromoProfit">Promo Profit</label>
+                                <input type="text" class="form-control" id="editProductPromoProfit" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label for="editProductDescription">Description</label>
+                                <textarea class="form-control" id="editProductDescription" rows="3"></textarea>
+                            </div>
+
+
+                        </div>
+                        <div class="col-md-6">
+
+                            <div class="form-group">
+                                <label for="editProductImage">Edit Product Image</label>
+                                <input type="file" class="form-control-file" id="editProductImage" name="image">
+
+                            </div>
+
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+    <!-- Add Product Modal -->
+<div class="modal fade" id="addProductModal" tabindex="-1" role="dialog" aria-labelledby="addProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addProductModalLabel">Add New Product</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addProductForm" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="productName">Product Name</label>
+                                <input type="text" class="form-control" autocomplete="off" id="productName" name="name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="productVariant">Variant</label>
+                                <input class="form-control" autocomplete="off" id="productVariant" name="variant" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="productQuantity">Quantity</label>
+                                <input type="number" class="form-control" id="productQuantity" name="quantity" value="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="productSupplierPrice">Supplier Price</label>
+                                <input type="text" class="form-control" id="productSupplierPrice" name="supplierPrice">
+                            </div>
+                            <div class="form-group">
+                                <label for="productRetailPrice">Retail Price</label>
+                                <input type="text" class="form-control" id="productRetailPrice" name="retailPrice" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="productPromoPrice">Promo Price</label>
+                                <input type="text" class="form-control" id="productPromoPrice" name="promoPrice">
+                            </div>
+                            <div class="form-group">
+                                <label for="productWholesalePrice">Wholesale Price</label>
+                                <input type="text" class="form-control" id="productWholesalePrice" name="wholesalePrice">
+                            </div>
+
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="productCategory">Category</label>
+                                <select class="form-control" id="productCategory" name="categoryId" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="productSubcategory">Subcategory</label>
+                                <select class="form-control" id="productSubcategory" name="subcategoryId" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="productSupplier">Supplier</label>
+                                <select class="form-control" id="productSupplier" name="supplierId" required></select>
+                                <input type="hidden" id="supplierId">
+                            </div>
+
+                            <div class="form-group">
+                            <label for="productRetailProfit">Retail Profit</label>
+                            <input type="text" class="form-control" id="productRetailProfit" disabled>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="productPromoProfit">Promo Profit</label>
+                            <input type="text" class="form-control" id="productPromoProfit" disabled>
+                        </div>
+                            <div class="form-group">
+                            <label for="productWholesaleProfit">Wholesale Profit</label>
+                            <input type="text" class="form-control" id="productWholesaleProfit" disabled>
+                        </div>
+                            <div class="form-group">
+                                <label for="productCode">Product Code</label>
+                                <input type="text" class="form-control" id="productCode" name="productCode">
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="productDescription">Description</label>
+                                <textarea class="form-control" id="productDescription" name="description" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="productImage">Product Image</label>
+                                <input type="file" class="form-control-file" id="productImage" name="image" accept="image/*">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group text-right">
+                        <button type="submit" class="btn btn-primary btn-sm">Add Product</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    <!-- Add Category Modal -->
+    <div class="modal fade" id="addCategoryModal" tabindex="-1" role="dialog" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addCategoryModalLabel">Add Category</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="addCategoryForm">
+                        <div class="form-group">
+                            <label for="categoryName">Category Name</label>
+                            <input type="text" class="form-control" id="categoryName" required>
+                        </div>
+                        <div class="form-group text-right">
+                            <button type="submit" class="btn btn-primary">Add Category</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Subcategory Modal -->
+    <div class="modal fade" id="addSubcategoryModal" tabindex="-1" role="dialog" aria-labelledby="addSubcategoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addSubcategoryModalLabel">Add Subcategory</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="addSubcategoryForm">
+                        <div class="form-group">
+                            <label for="subcategoryName">Subcategory Name</label>
+                            <input type="text" class="form-control" id="subcategoryName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="subcategoryCategory">Category</label>
+                            <select class="form-control" id="subcategoryCategory" required></select>
+                        </div>
+                        <div class="form-group text-right">
+                            <button type="submit" class="btn btn-primary">Add Subcategory</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Supplier Modal -->
+    <div class="modal fade" id="addSupplierModal" tabindex="-1" role="dialog" aria-labelledby="addSupplierModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addSupplierModalLabel">Add Supplier</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="addSupplierForm">
+                        <div class="form-group">
+                            <label for="supplierName">Supplier Name</label>
+                            <input type="text" class="form-control" id="supplierName" required>
+                        </div>
+                        <div class="form-group text-right">
+                            <button type="submit" class="btn btn-primary">Add Supplier</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            var table = $('#inventoryTable').DataTable({
+                "ajax": {
+                    "url": "/get_products",
+                    "dataSrc": ""
+                },
+                "columns": [
+                    {
+                        "data": "product_id",
+                        "render": function(data, type, row, meta) {
+                            return '<a href="#" class="product-link" data-id="' + data + '">' + data + '</a>';
+                        }
+                    },
+                    { "data": "name" },
+                    { "data": "variant" },
+                    { "data": "quantity" },
+                    { "data": "branch_qty" },
+                    { "data": "retailprice" },
+                    { "data": "promoprice" },
+                    { "data": "wholesaleprice" },
+                    { "data": "supplierprice" },
+                    { "data": "retailprofit" },
+                    { "data": "promoprofit" },
+                    { "data": "wholesaleprofit" },
+                    { "data": "category" },
+                    { "data": "subcategory" },
+                    { "data": "supplier" },
+                    {
+                        "data": null,
+                        "render": function(data, type, row) {
+                            return `<button type="button" class="btn btn-primary edit-btn" data-id="${row.product_id}">Edit</button>`;
+                        },
+                        "orderable": false
+                    }
+                ],
+                "scrollX": true // Enable horizontal scrolling
+            });
+
+            var categoryTable = $('#categoryTable').DataTable({
+                "ajax": {
+                    "url": "/get_categories",
+                    "dataSrc": ""
+                },
+                "columns": [
+                    { "data": "categoryid" },
+                    { "data": "name" }
+                ]
+            });
+
+            var subcategoryTable = $('#subcategoryTable').DataTable({
+                "ajax": {
+                    "url": "/get_subcategories2",
+                    "dataSrc": ""
+                },
+                "columns": [
+                    { "data": "subcategoryid" },
+                    { "data": "name" },
+                    { "data": "categoryid" }
+                ]
+            });
+
+            var supplierTable = $('#supplierTable').DataTable({
+                "ajax": {
+                    "url": "/get_suppliers",
+                    "dataSrc": ""
+                },
+                "columns": [
+                    { "data": "supplierid" },
+                    { "data": "name" }
+                ]
+            });
+
+            $('#inventoryTable').on('click', '.edit-btn', function() {
+                var productId = $(this).data('id');
+                fetchProductDetails(productId);
+            });
+
+            $('#inventoryTable').on('click', '.product-link', function() {
+                var productId = $(this).data('id');
+                fetchProductDetails(productId);
+            });
+
+            function fetchProductDetails(productId) {
+    $.ajax({
+        url: '/get_product_details',
+        type: 'GET',
+        data: { product_id: productId },
+        success: function(data) {
+            if (!data.error) {
+                $('#editProductId').val(data.product_id);
+                $('#editProductName').val(data.name);
+                $('#editProductVariant').val(data.variant);
+                $('#editProductQuantity').val(data.quantity);
+                $('#editProductRetailPrice').val(data.retailprice);
+                $('#editProductPromoPrice').val(data.promoprice);
+                $('#editProductWholesalePrice').val(data.wholesaleprice);
+                $('#editProductSupplierPrice').val(data.supplierprice);
+                $('#editProductCode').val(data.productcode);
+                $('#editProductDescription').val(data.description);
+                populateVariants('#editProductVariant');
+                if (data.categoryid) {
+                    populateCategories('#editProductCategory', data.categoryid);
+                    populateSubcategories('#editProductSubcategory', data.categoryid, data.subcategoryid);
+                } else {
+                    populateCategories('#editProductCategory');
+                    $('#editProductSubcategory').empty(); // Clear subcategories if no category is selected
+                }
+                populateSuppliers('#editProductSupplier', data.supplierid);
+                    // Update the image src attribute
+                if (data.image_path && data.image_path !== '') {
+    $('#editProductImageDisplay').attr('src', data.image_path);
+    $('#editProductImageDisplay').show();  // Ensure the image is visible
+} else {
+    $('#editProductImageDisplay').attr('src', '/uploads/product_images/no_image.jpg');  // Default image path
+    $('#editProductImageDisplay').show();
+}
+
+
+
+                $('#editProductModal').modal('show');
+            } else {
+                console.error('Error fetching product details:', data.error);
+            }
+        },
+        error: function(error) {
+            console.error('Error fetching product details:', error);
+        }
+    });
+}
+
+
+            function populateSuppliers(selector, selectedSupplierId) {
+                $.ajax({
+                    url: '/get_suppliers',
+                    type: 'GET',
+                    success: function(data) {
+                        var supplierSelect = $(selector);
+                        supplierSelect.empty();
+                        data.forEach(function(supplier) {
+                            var selected = supplier.supplierid === selectedSupplierId ? 'selected' : '';
+                            supplierSelect.append(`<option value="${supplier.supplierid}" ${selected}>${supplier.name}</option>`);
+                        });
+                    },
+                    error: function(error) {
+                        console.error('Error fetching suppliers:', error);
+                    }
+                });
+            }
+
+            function populateCategories(selector, selectedCategoryId = null) {
+    $.ajax({
+        url: '/get_categories',
+        type: 'GET',
+        success: function(data) {
+            var categorySelect = $(selector);
+            categorySelect.empty();
+            categorySelect.append('<option value="" selected>Select a category</option>'); // Add a default "Select" option
+
+            data.forEach(function(category) {
+                var selected = category.categoryid === selectedCategoryId ? 'selected' : '';
+                categorySelect.append(`<option value="${category.categoryid}" ${selected}>${category.name}</option>`);
+            });
+        },
+        error: function(error) {
+            console.error('Error fetching categories:', error);
+        }
+    });
+}
+            function populateSubcategories(selector, categoryId, selectedSubcategoryId) {
+                $.ajax({
+                    url: '/get_subcategories',
+                    type: 'GET',
+                    data: { category_id: categoryId },
+                    success: function(data) {
+                        var subcategorySelect = $(selector);
+                        subcategorySelect.empty();
+                        subcategorySelect.append('<option value="" selected>Select a subcategory</option>'); // Add a default "Select" option
+                        data.forEach(function(subcategory) {
+                            var selected = subcategory.subcategoryid === selectedSubcategoryId ? 'selected' : '';
+                            subcategorySelect.append(`<option value="${subcategory.subcategoryid}" ${selected}>${subcategory.name}</option>`);
+                        });
+                    },
+                    error: function(error) {
+                        console.error('Error fetching subcategories:', error);
+                    }
+                });
+            }
+
+            function populateVariants(selector) {
+                $.ajax({
+                    url: '/get_product_variants',
+                    type: 'GET',
+                    success: function(data) {
+                        var variantSelect = $(selector);
+                        variantSelect.empty();
+                        data.forEach(function(variant) {
+                            variantSelect.append(`<option value="${variant.variant}">${variant.variant}</option>`);
+                        });
+                    },
+                    error: function(error) {
+                        console.error('Error fetching variants:', error);
+                    }
+                });
+            }
+
+            populateVariants('#productVariant');
+            populateVariants('#editProductVariant');
+            populateCategories('#productCategory');
+            populateSubcategories('#productsubCategory');
+            populateCategories('#editProductCategory');
+            populateSuppliers('#productSupplier');
+            populateSuppliers('#editProductSupplier');
+
+            $('#productCategory').change(function() {
+                var categoryId = $(this).val();
+                populateSubcategories('#productSubcategory', categoryId);
+            });
+
+            $('#editProductCategory').change(function() {
+                var categoryId = $(this).val();
+                populateSubcategories('#editProductSubcategory', categoryId);
+            });
+
+            $('#editProductForm').on('submit', function(e) {
+    e.preventDefault();
+
+    var productId = $('#editProductId').val();
+    var name = $('#editProductName').val();
+    var variant = $('#editProductVariant').val();
+    var quantity = $('#editProductQuantity').val();
+    var retailPrice = $('#editProductRetailPrice').val();
+    var promoPrice = $('#editProductPromoPrice').val();
+    var wholesalePrice = $('#editProductWholesalePrice').val();
+    var supplierPrice = $('#editProductSupplierPrice').val();
+    var categoryId = $('#editProductCategory').val();
+    var subcategoryId = $('#editProductSubcategory').val();
+    var supplierId = $('#editProductSupplier').val();
+    var productCode = $('#editProductCode').val();
+    var description = $('#editProductDescription').val();
+    var image = $('#editProductImage')[0].files[0]; // Get the chosen image file
+
+    // Create FormData object
+    var formData = new FormData();
+    formData.append('product_id', productId);
+    formData.append('name', name);
+    formData.append('variant', variant);
+    formData.append('quantity', quantity);
+    formData.append('retailPrice', retailPrice);
+    formData.append('promoPrice', promoPrice);
+    formData.append('wholesalePrice', wholesalePrice);
+    formData.append('supplierPrice', supplierPrice);
+    formData.append('categoryId', categoryId);
+    formData.append('subcategoryId', subcategoryId);
+    formData.append('supplierId', supplierId);
+    formData.append('productCode', productCode);
+    formData.append('description', description);
+    if (image) {
+        formData.append('image', image); // Append image file to form data
+    }
+
+    $.ajax({
+        url: '/edit_product',
+        method: 'POST',
+        contentType: false,
+        processData: false,
+        data: formData,
+        success: function(response) {
+            $('#editProductModal').modal('hide');
+            table.ajax.reload(); // Reload DataTable after editing a product
+            Swal.fire({
+                icon: 'success',
+                title: 'Product Updated',
+                text: 'The product details have been successfully updated.'
+            });
+            $('#editProductImage').val(''); // Clear the file input field
+        },
+        error: function(xhr, status, error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error Updating Product',
+                text: 'Failed to update product: ' + (xhr.responseJSON.message || xhr.statusText)
+            });
+            $('#editProductImage').val(''); // Clear the file input field
+        }
+    });
+});
+
+            $('#addProductForm').on('submit', function(e) {
+    e.preventDefault();
+
+    var name = $('#productName').val();
+    var variant = $('#productVariant').val();
+    var quantity = $('#productQuantity').val() || null;
+    var retailPrice = $('#productRetailPrice').val() || null;
+    var promoPrice = $('#productPromoPrice').val() || null;
+    var wholesalePrice = $('#productWholesalePrice').val() || null;
+    var supplierPrice = $('#productSupplierPrice').val() || null;
+    var categoryId = $('#productCategory').val() || null;
+    var subcategoryId = $('#productSubcategory').val() || null;
+    var supplierId = $('#productSupplier').val();
+    var productCode = $('#productCode').val();
+    var description = $('#productDescription').val();
+    var image = $('#editProductImage')[0].files[0]; // Assuming your input field for image has id 'productImage'
+
+    if (!name.trim() || !supplierId) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Missing Information',
+            text: 'Product name and supplier are required fields.'
+        });
+        return;
+    }
+
+    var formData = new FormData();
+    formData.append('name', name);
+    formData.append('variant', variant);
+    formData.append('quantity', quantity);
+    formData.append('retailPrice', retailPrice);
+    formData.append('promoPrice', promoPrice);
+    formData.append('wholesalePrice', wholesalePrice);
+    formData.append('supplierPrice', supplierPrice);
+    formData.append('categoryId', categoryId);
+    formData.append('subcategoryId', subcategoryId);
+    formData.append('supplierId', supplierId);
+    formData.append('productCode', productCode);
+    formData.append('description', description);
+    if (image) {
+        formData.append('image', image);
+    }
+
+    $.ajax({
+        url: '/add_product',
+        method: 'POST',
+        contentType: false,
+        processData: false,
+        data: formData,
+        success: function(response) {
+            // Clear specific fields
+            $('#productQuantity').val('0');
+            $('#productRetailPrice').val('');
+            $('#productPromoPrice').val('0');
+            $('#productWholesalePrice').val('0');
+            $('#productSupplierPrice').val('0');
+            $('#productPromoProfit').val('0');
+            $('#productWholesaleProfit').val('0');
+            $('#productRetailProfit').val('0');
+            $('#productCode').val('');
+            $('#productImage').val(''); // Clear the image input
+
+            // Reload DataTable
+            table.ajax.reload();
+
+            // Show Sweet Alert and automatically hide after 2 seconds
+            Swal.fire({
+                icon: 'success',
+                title: 'Product Added',
+                text: `The product "${name}" with variant "${variant}" has been added successfully.`,
+                timer: 2000,
+                showConfirmButton: false
+            }).then(() => {
+                $('#productVariant').focus();  // Refocus on variant input after alert disappears
+            });
+        },
+        error: function(xhr, status, error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error Adding Product',
+                text: 'Failed to add product: ' + (xhr.responseJSON.message || xhr.statusText)
+            });
+        }
+    });
+});
+
+            $("#productName").autocomplete({
+    source: function(request, response) {
+        $.ajax({
+            url: "/search_products_inventory",
+            type: "GET",
+            dataType: "json",
+            data: { query: request.term },
+            success: function(data) {
+                response($.map(data, function(item) {
+                    return {
+                        label: item.name,
+                        value: item.name
+                    };
+                }));
+            },
+            error: function() {
+                response([]);
+            }
+        });
+    },
+    minLength: 1,
+    select: function(event, ui) {
+        console.log("Selected: " + ui.item.value);
+    }
+});
+
+$("#productVariant").autocomplete({
+    source: function(request, response) {
+        $.ajax({
+            url: "/get_product_variants_inventory",
+            type: "GET",
+            dataType: "json",
+            data: { query: request.term },
+            success: function(data) {
+                response($.map(data, function(item) {
+                    return {
+                        label: item.variant,
+                        value: item.variant
+                    };
+                }));
+            },
+            error: function() {
+                response([]);
+            }
+        });
+    },
+    minLength: 1,
+    select: function(event, ui) {
+        console.log("Selected: " + ui.item.value);
+    }
+});
+
+$("#editProductVariant").autocomplete({
+    source: function(request, response) {
+        $.ajax({
+            url: "/get_product_variants_inventory",
+            type: "GET",
+            dataType: "json",
+            data: { query: request.term },
+            success: function(data) {
+                response($.map(data, function(item) {
+                    return {
+                        label: item.variant,
+                        value: item.variant
+                    };
+                }));
+            },
+            error: function() {
+                response([]);
+            }
+        });
+    },
+    minLength: 1,
+    select: function(event, ui) {
+        console.log("Selected: " + ui.item.value);
+    }
+});
+
+
+            $("#editProductSupplier").autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: "/search_suppliers",
+                        type: "GET",
+                        dataType: "json",
+                        data: { query: request.term },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    label: item.name,
+                                    value: item.name,
+                                    id: item.supplierid
+                                };
+                            }));
+                        },
+                        error: function() {
+                            response([]);
+                        }
+                    });
+                },
+                minLength: 1,
+                select: function(event, ui) {
+                    $('#editSupplierId').val(ui.item.id);
+                }
+            });
+
+            $("#productSupplier").autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: "/search_suppliers",
+                        type: "GET",
+                        dataType: "json",
+                        data: { query: request.term },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    label: item.name,
+                                    value: item.name,
+                                    id: item.supplierid
+                                };
+                            }));
+                        },
+                        error: function() {
+                            response([]);
+                        }
+                    });
+                },
+                minLength: 1,
+                select: function(event, ui) {
+                    $('#supplierId').val(ui.item.id);
+                }
+            });
+        });
+
+        $('#productCategory').change(function() {
+    var categoryId = $(this).val();
+    populateSubcategories('#productSubcategory', categoryId, null, true); // Added true to auto-select the first subcategory
+});
+
+$('#editProductCategory').change(function() {
+    var categoryId = $(this).val();
+    populateSubcategories('#editProductSubcategory', categoryId, null, true); // Added true to auto-select the first subcategory
+});
+
+function populateSubcategories(selector, categoryId, selectedSubcategoryId, autoSelectFirst = false) {
+    $.ajax({
+        url: '/get_subcategories',
+        type: 'GET',
+        data: { category_id: categoryId },
+        success: function(data) {
+            var subcategorySelect = $(selector);
+            subcategorySelect.empty();
+            if (data.length > 0) {
+                data.forEach(function(subcategory, index) {
+                    var selected = (selectedSubcategoryId && subcategory.subcategoryid === selectedSubcategoryId) ? 'selected' : '';
+                    if (autoSelectFirst && index === 0 && !selectedSubcategoryId) {
+                        selected = 'selected'; // Auto-select the first subcategory if none is selected and autoSelectFirst is true
+                    }
+                    subcategorySelect.append(`<option value="${subcategory.subcategoryid}" ${selected}>${subcategory.name}</option>`);
+                });
+            } else {
+                subcategorySelect.append(`<option value="" selected>No Subcategory Available</option>`); // Handle cases where no subcategories are available
+            }
+        },
+        error: function(error) {
+            console.error('Error fetching subcategories:', error);
+        }
+    });
+}
+
+function calculateProfits() {
+    // Function to set the color based on the value
+    function setColor(element, value) {
+        if (value <= 0) {
+            element.css('color', 'red');
+        } else {
+            element.css('color', 'green');
+        }
+    }
+
+    // Calculate profits for the add form
+    var retailPrice = parseFloat($('#productRetailPrice').val()) || 0;
+    var wholesalePrice = parseFloat($('#productWholesalePrice').val()) || 0;
+    var promoPrice = parseFloat($('#productPromoPrice').val()) || 0;
+    var supplierPrice = parseFloat($('#productSupplierPrice').val()) || 0;
+
+    var retailProfit = retailPrice - supplierPrice;
+    var wholesaleProfit = wholesalePrice - supplierPrice;
+    var promoProfit = promoPrice - supplierPrice;
+
+    $('#productRetailProfit').val(retailProfit.toFixed(2));
+    setColor($('#productRetailProfit'), retailProfit);
+
+    $('#productWholesaleProfit').val(wholesaleProfit.toFixed(2));
+    setColor($('#productWholesaleProfit'), wholesaleProfit);
+
+    $('#productPromoProfit').val(promoProfit.toFixed(2));
+    setColor($('#productPromoProfit'), promoProfit);
+
+    // Calculate profits for the edit form
+    var editRetailPrice = parseFloat($('#editProductRetailPrice').val()) || 0;
+    var editWholesalePrice = parseFloat($('#editProductWholesalePrice').val()) || 0;
+    var editPromoPrice = parseFloat($('#editProductPromoPrice').val()) || 0;
+    var editSupplierPrice = parseFloat($('#editProductSupplierPrice').val()) || 0;
+
+    var editRetailProfit = editRetailPrice - editSupplierPrice;
+    var editWholesaleProfit = editWholesalePrice - editSupplierPrice;
+    var editPromoProfit = editPromoPrice - editSupplierPrice;
+
+    $('#editProductRetailProfit').val(editRetailProfit.toFixed(2));
+    setColor($('#editProductRetailProfit'), editRetailProfit);
+
+    $('#editProductWholesaleProfit').val(editWholesaleProfit.toFixed(2));
+    setColor($('#editProductWholesaleProfit'), editWholesaleProfit);
+
+    $('#editProductPromoProfit').val(editPromoProfit.toFixed(2));
+    setColor($('#editProductPromoProfit'), editPromoProfit);
+}
+
+// Add event listeners
+$('#productRetailPrice, #productWholesalePrice, #productPromoPrice, #productSupplierPrice').change(calculateProfits);
+$('#editProductRetailPrice, #editProductWholesalePrice, #editProductPromoPrice, #editProductSupplierPrice').change(calculateProfits);
+
+// Initialize the profits calculation on document ready
+$(document).ready(function() {
+    calculateProfits();
+});
+
+// Event listener for when the Add Product Modal is shown
+$('#addProductModal').on('show.bs.modal', function () {
+    calculateProfits();  // Recalculate profits when the modal opens
+});
+
+// Event listener for when the Edit Product Modal is shown
+$('#editProductModal').on('show.bs.modal', function () {
+    calculateProfits();  // Recalculate profits when the modal opens
+});
+
+    </script>
+</body>
+</html>

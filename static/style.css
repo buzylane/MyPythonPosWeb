@@ -1,0 +1,107 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1 {
+    margin: 0;
+}
+
+main {
+    margin-top: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.flashes {
+    list-style-type: none;
+    padding: 0;
+}
+
+.flashes li {
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.flashes li.danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.flashes li.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.navbar input[type="search"] {
+            max-width: 200px; /* Limit the width of the input field */
+        }
+
+        .highlight {
+            background-color: #ffdddd !important; /* Light red background */
+            border: 1px solid red !important;
+        }
+
+        .table {
+            width: 100%;
+            overflow: hidden;  /* Ensures the layout does not get messy */
+        }
+
+        .table tbody {
+            display: block;
+            max-height: 800px;  /* Set this to the desired maximum height */
+            overflow-y: auto;   /* Enables vertical scrolling */
+            overflow-x: hidden; /* Hides horizontal scroll (if not necessary) */
+        }
+
+        .table thead, .table tbody tr {
+            display: table;
+            width: 100%;        /* Optional: Helps ensure cells are aligned */
+            table-layout: fixed; /* Optional: Helps prevent columns from resizing */
+        }
+
+        .table thead {
+            width: calc(100% - 1em); /* Adjust based on the scrollbar width */
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        .content {
+            min-height: calc(100% - 70px);  /* Adjust 70px to the height of your footer */
+            padding-bottom: 70px;  /* Same as footer height, ensures space for the footer */
+        }
+
+        .footer {
+            height: 70px;  /* Set the height of your footer */
+            width: 100%;
+            position: fixed;
+            bottom: 0;
+            background-color: #333;  /* Dark background for the footer */
+            color: white;  /* Text color */
+            display: flex;
+            justify-content: center;  /* Centers the content horizontally */
+            align-items: center;  /* Centers the content vertically */
+        }
+
+        .dropdown-menu {
+            background-color: #343a40; /* Dark background for the dropdown */
+            color: white; /* Text color */
+        }
+
+        .dropdown-item {
+            color: white; /* Text color */
+        }
+
+        .dropdown-item:hover {
+            background-color: #495057; /* Darker background on hover */
+        }

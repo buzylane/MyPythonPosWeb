@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Receive Payment</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>Receive Payment</h2>
+        <form method="post" action="{{ url_for('receive_payment') }}">
+            <div class="form-group">
+                <label for="payment_date">Payment Date</label>
+                <input type="date" class="form-control" id="payment_date" name="payment_date" required>
+            </div>
+            <div class="form-group">
+                <label for="amount">Amount</label>
+                <input type="number" step="0.01" class="form-control" id="amount" name="amount" required>
+            </div>
+            <div class="form-group">
+                <label for="payment_method">Payment Method</label>
+                <input type="text" class="form-control" id="payment_method" name="payment_method" required>
+            </div>
+            <div class="form-group">
+                <label for="transaction_id">Transaction ID</label>
+                <input type="text" class="form-control" id="transaction_id" name="transaction_id" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit Payment</button>
+        </form>
+    </div>
+</body>
+</html>

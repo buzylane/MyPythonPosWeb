@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Order</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.3.4/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://unpkg.com/simple-keyboard/build/css/index.css" rel="stylesheet">
+    <script src="https://unpkg.com/simple-keyboard/build/index.js"></script>
+    <style>
+        .navbar input[type="search"] {
+            max-width: 200px; /* Limit the width of the input field */
+        }
+
+        .highlight {
+            background-color: #ffdddd !important; /* Light red background */
+            border: 1px solid red !important;
+        }
+
+        .table {
+            width: 100%;
+            overflow: hidden;  /* Ensures the layout does not get messy */
+        }
+
+        .table tbody {
+            display: block;
+            max-height: 800px;  /* Set this to the desired maximum height */
+            overflow-y: auto;   /* Enables vertical scrolling */
+            overflow-x: hidden; /* Hides horizontal scroll (if not necessary) */
+        }
+
+        .table thead, .table tbody tr {
+            display: table;
+            width: 100%;        /* Optional: Helps ensure cells are aligned */
+            table-layout: fixed; /* Optional: Helps prevent columns from resizing */
+        }
+
+        .table thead {
+            width: calc(100% - 1em); /* Adjust based on the scrollbar width */
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        .content {
+            min-height: calc(100% - 70px);  /* Adjust 70px to the height of your footer */
+            padding-bottom: 70px;  /* Same as footer height, ensures space for the footer */
+        }
+
+        .footer {
+            height: 70px;  /* Set the height of your footer */
+            width: 100%;
+            position: fixed;
+            bottom: 0;
+            background-color: #333;  /* Dark background for the footer */
+            color: white;  /* Text color */
+            display: flex;
+            justify-content: center;  /* Centers the content horizontally */
+            align-items: center;  /* Centers the content vertically */
+        }
+
+
+    </style>
+</head>
+<body>
+<!--    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">-->
+<!--    <a class="navbar-brand" href="#">BUZYLANE</a>-->
+<!--    <div class="navbar-text mx-auto">-->
+<!--        <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for('orders') }}'">Back</button>-->
+<!--        <button type="button" class="btn btn-success mr-2" onclick="window.location.href='{{ url_for('add_order') }}'">Create New</button>-->
+<!--        <button type="button" class="btn btn-info mr-2" data-toggle="modal" data-target="#addCustomerModal">Add Customer</button>-->
+<!--        <button type="button" class="btn btn-success mr-2" onclick="window.location.href='{{ url_for('inventory') }}'">Inventory</button>-->
+<!--        <button type="button" class="btn btn-info mr-2" data-toggle="modal" data-target="#receivePaymentModal">Payments</button>-->
+<!--        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#deliveryInfoModal">Delivery Info</button>-->
+<!--        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#sendEmailModal">Send Email</button>-->
+<!--        <button type="button" class="btn btn-info mr-2" onclick="generateInvoice()">Generate Invoice</button>-->
+<!--        <button type="button" class="btn btn-info mr-2" onclick="printReceipt({{ order_id }})">Print Receipt</button>-->
+
+<!--        &lt;!&ndash; Notification Button &ndash;&gt;-->
+<!--        <button type="button" class="btn btn-warning" onclick="showNotifications()">-->
+<!--            <i class="fas fa-bell"></i> Notifications-->
+<!--        </button>-->
+<!--    </div>-->
+<!--    <div class="collapse navbar-collapse" id="navbarNav">-->
+<!--        <ul class="navbar-nav ml-auto">-->
+<!--            <form class="form-inline my-2 my-lg-0" id="searchOrderForm">-->
+<!--                <input class="form-control mr-sm-2" type="search" placeholder="Order ID" aria-label="Search" id="searchOrderId">-->
+<!--                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>-->
+<!--            </form>-->
+<!--            {% if session.username %}-->
+<!--            <li class="nav-item">-->
+<!--                <span class="navbar-text">User: {{ session.username }}</span>-->
+<!--            </li>-->
+<!--            {% endif %}-->
+<!--        </ul>-->
+<!--    </div>-->
+<!--</nav>-->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="#">{{ session.business_name or 'STORE MANAGEMENT SYSTEM' }}</a>
+    <div class="navbar-text mx-auto">
+        <!-- Existing buttons -->
+        <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for('orders') }}'">Back</button>
+        <button type="button" class="btn btn-success mr-2" onclick="window.location.href='{{ url_for('add_order') }}'">Create New</button>
+        <button type="button" class="btn btn-info mr-2" data-toggle="modal" data-target="#addCustomerModal">Add Customer</button>
+        <button type="button" class="btn btn-success mr-2" onclick="window.location.href='{{ url_for('inventory') }}'">Inventory</button>
+        <button type="button" class="btn btn-info mr-2" data-toggle="modal" data-target="#receivePaymentModal">Payments</button>
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#deliveryInfoModal">Delivery Info</button>
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#sendEmailModal">Send Email</button>
+        <button type="button" class="btn btn-info mr-2" onclick="generateInvoice()">Generate Invoice</button>
+        <button type="button" class="btn btn-info mr-2" onclick="printReceipt({{ order_id }})">Print Receipt</button>
+        <!-- More buttons... -->
+
+
+    </div>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ml-auto">
+            <form class="form-inline my-2 my-lg-0" id="searchOrderForm">
+                <input class="form-control mr-sm-2" type="search" placeholder="Order ID" aria-label="Search" id="searchOrderId">
+                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+            </form>
+            {% if session.username %}
+            <li class="nav-item">
+                <span class="navbar-text">User: {{ session.username }}</span>
+            </li>
+            {% endif %}
+        </ul>
+        <div class="btn-group">
+    <button type="button" class="btn btn-warning dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <i class="fas fa-bell"></i> Notifications
+    </button>
+    <div class="dropdown-menu dropdown-menu-right" id="notificationDropdown">
+        <!-- Notifications will be dynamically inserted here -->
+    </div>
+</div>
+</div>
+        </div>
+    </div>
+
+        </div>
+</nav>
+
+
+
+    <div class="container-fluid mt-4">
+        <form id="orderForm" method="post" action="{{ url_for('add_order') }}">
+            <input type="hidden" id="Customer_ID" name="Customer_ID" value="1">
+            {% include '_form_fields.html' %}
+            {% include '_product_details.html' %}
+            <button type="submit" class="btn btn-primary" id="saveOrderButton" style="display: none;">Save Order</button>
+        </form>
+        {% include '_totals.html' %}
+        {% include '_modals.html' %}
+    </div>
+    {% include '_add_order_scripts.html' %}
+    {% include '_form_field_updates_scripts.html' %}
+    {% include '_add_order_footer.html' %}
+
+</body>
+</html>

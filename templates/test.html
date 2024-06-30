@@ -1,0 +1,488 @@
+
+You
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tabledit/1.2.3/jquery.tabledit.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <style>
+        .dataTables_wrapper .dataTables_filter {
+            float: right;
+        }
+        .dataTables_wrapper .dataTables_length {
+            float: left;
+        }
+        .dataTables_wrapper .dataTables_info {
+            float: left;
+            margin-top: 10px;
+        }
+        .dataTables_wrapper .dataTables_paginate {
+            float: right;
+            margin-top: 10px;
+        }
+        .dataTables_wrapper .dataTables_scroll {
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" href="#">Store Management System</a>
+        <div class="navbar-nav">
+            <a class="nav-item nav-link" href="/dashboard">Dashboard</a>
+            <a class="nav-item nav-link active" href="/inventory">Inventory</a>
+            <a class="nav-item nav-link" href="/orders">Orders</a>
+            <a class="nav-item nav-link" href="/logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <h2>Inventory Management</h2>
+        <button type="button" class="btn btn-primary mb-2" data-toggle="modal" data-target="#addProductModal">Add Product</button>
+        <div class="table-responsive">
+            <table id="inventoryTable" class="table table-striped table-bordered" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Product ID</th>
+                        <th>Name</th>
+                        <th>Variant</th>
+                        <th>Quantity</th>
+                        <th>Retail Price</th>
+                        <th>Promo Price</th>
+                        <th>Wholesale Price</th>
+                        <th>Supplier Price</th>
+                        <th>Retail Profit</th>
+                        <th>Promo Profit</th>
+                        <th>Wholesale Profit</th>
+                        <th>Supplier</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div class="modal fade" id="addProductModal" tabindex="-1" role="dialog" aria-labelledby="addProductModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addProductModalLabel">Add New Product</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="addProductForm">
+                        <div class="form-group">
+                            <label for="productName">Product Name</label>
+                            <input type="text" class="form-control" autocomplete="off" id="productName" required>
+                        </div>
+<!--                        <div class="form-group">-->
+<!--                            <label for="productVariant">Variant</label>-->
+<!--                            <input type="text" class="form-control" id="productVariant">-->
+<!--                        </div>-->
+                        <div class="form-group">
+                            <label for="productVariant">Variant</label>
+                            <select class="form-control" id="productVariant" required></select>
+
+                        </div>
+                        <div class="form-group">
+                            <label for="productQuantity">Quantity</label>
+                            <input type="number" class="form-control" id="productQuantity" value="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="productRetailPrice">Retail Price</label>
+                            <input type="text" class="form-control" id="productRetailPrice" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="productPromoPrice">Promo Price</label>
+                            <input type="text" class="form-control" id="productPromoPrice">
+                        </div>
+                        <div class="form-group">
+                            <label for="productWholesalePrice">Wholesale Price</label>
+                            <input type="text" class="form-control" id="productWholesalePrice">
+                        </div>
+                        <div class="form-group">
+                            <label for="productSupplierPrice">Supplier Price</label>
+                            <input type="text" class="form-control" id="productSupplierPrice">
+                        </div>
+                        <div class="form-group">
+                            <label for="productSupplier">Supplier</label>
+                            <select class="form-control" id="productSupplier" required></select>
+                            <input type="hidden" id="supplierId">
+                        </div>
+                        <div class="form-group">
+                            <label for="productCode">Product Code</label>
+                            <input type="text" class="form-control" id="productCode">
+                        </div>
+                        <div class="form-group">
+                            <label for="productDescription">Description</label>
+                            <textarea class="form-control" id="productDescription"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Product</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div class="modal fade" id="editProductModal" tabindex="-1" role="dialog" aria-labelledby="editProductModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editProductModalLabel">Edit Product</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editProductForm">
+                        <input type="hidden" id="editProductId">
+                        <div class="form-group">
+                            <label for="editProductName">Product Name</label>
+                            <input type="text" class="form-control" id="editProductName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editProductVariant">Variant</label>
+                            <select class="form-control" id="editProductVariant" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editProductQuantity">Quantity</label>
+                            <input type="number" class="form-control" id="editProductQuantity" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editProductRetailPrice">Retail Price</label>
+                            <input type="text" class="form-control" id="editProductRetailPrice" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editProductPromoPrice">Promo Price</label>
+                            <input type="text" class="form-control" id="editProductPromoPrice">
+                        </div>
+                        <div class="form-group">
+                            <label for="editProductWholesalePrice">Wholesale Price</label>
+                            <input type="text" class="form-control" id="editProductWholesalePrice">
+                        </div>
+                        <div class="form-group">
+                            <label for="editProductSupplierPrice">Supplier Price</label>
+                            <input type="text" class="form-control" id="editProductSupplierPrice">
+                        </div>
+                        <div class="form-group">
+                            <label for="editProductSupplier">Supplier</label>
+                            <select class="form-control" id="editProductSupplier" required></select>
+                            <input type="hidden" id="editSupplierId">
+                        </div>
+                        <div class="form-group">
+                            <label for="editProductCode">Product Code</label>
+                            <input type="text" class="form-control" id="editProductCode">
+                        </div>
+                        <div class="form-group">
+                            <label for="editProductDescription">Description</label>
+                            <textarea class="form-control" id="editProductDescription"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+    var table = $('#inventoryTable').DataTable({
+        "ajax": {
+            "url": "/get_products",
+            "dataSrc": ""
+        },
+        "columns": [
+            {
+                "data": "product_id",
+                "render": function(data, type, row, meta) {
+                    return '<a href="#" class="product-link" data-id="' + data + '">' + data + '</a>';
+                }
+            },
+            { "data": "name" },
+            { "data": "variant" },
+            { "data": "quantity" },
+            { "data": "retailprice" },
+            { "data": "promoprice" },
+            { "data": "wholesaleprice" },
+            { "data": "supplierprice" },
+            { "data": "retailprofit" },
+            { "data": "promoprofit" },
+            { "data": "wholesaleprofit" },
+            { "data": "supplier" },
+            {
+                "data": null,
+                "render": function(data, type, row) {
+                    return `<button type="button" class="btn btn-primary edit-btn" data-id="${row.product_id}">Edit</button>`;
+                },
+                "orderable": false
+            }
+        ],
+        "scrollX": true // Enable horizontal scrolling
+    });
+
+    $('#inventoryTable').on('click', '.edit-btn', function() {
+        var productId = $(this).data('id');
+        fetchProductDetails(productId);
+    });
+
+    $('#inventoryTable').on('click', '.product-link', function() {
+        var productId = $(this).data('id');
+        fetchProductDetails(productId);
+    });
+
+    function fetchProductDetails(productId) {
+        $.ajax({
+            url: '/get_product_details',
+            type: 'GET',
+            data: { productId: productId },
+            success: function(data) {
+                if (!data.error) {
+                    $('#editProductId').val(data.productId);
+                    $('#editProductName').val(data.name);
+                    $('#editProductVariant').val(data.variant);
+                    $('#editProductQuantity').val(data.quantity);
+                    $('#editProductRetailPrice').val(data.unit_price);
+                    $('#editProductPromoPrice').val(data.promoprice);
+                    $('#editProductWholesalePrice').val(data.wholesaleprice);
+                    $('#editProductSupplierPrice').val(data.supplierprice);
+                    $('#editProductCode').val(data.productcode);
+                    $('#editProductDescription').val(data.description);
+                    populateSuppliers('#editProductSupplier', data.supplierid);
+                    $('#editProductModal').modal('show');
+                } else {
+                    console.error('Error fetching product details:', data.error);
+                }
+            },
+            error: function(error) {
+                console.error('Error fetching product details:', error);
+            }
+        });
+    }
+
+    function populateSuppliers(selector, selectedSupplierId) {
+        $.ajax({
+            url: '/get_suppliers',
+            type: 'GET',
+            success: function(data) {
+                var supplierSelect = $(selector);
+                supplierSelect.empty();
+                data.forEach(function(supplier) {
+                    var selected = supplier.supplierid === selectedSupplierId ? 'selected' : '';
+                    supplierSelect.append(`<option value="${supplier.supplierid}" ${selected}>${supplier.name}</option>`);
+                });
+            },
+            error: function(error) {
+                console.error('Error fetching suppliers:', error);
+            }
+        });
+    }
+
+        // Populate suppliers in the "Add Product" modal
+    populateSuppliers('#productSupplier');
+
+    // Populate variants in the "Add Product" modal
+    populateVariants('#productVariant');
+
+    // Function to fetch and populate product variants
+function populateVariants(selector) {
+    $.ajax({
+        url: '/get_product_variants',  // Make sure this matches the Flask route
+        type: 'GET',
+        success: function(data) {
+            var variantSelect = $(selector);
+            variantSelect.empty();  // Clear previous options
+            data.forEach(function(variant) {
+                variantSelect.append(`<option value="${variant.variant}">${variant.variant}</option>`);
+            });
+        },
+        error: function(error) {
+            console.error('Error fetching variants:', error);
+        }
+    });
+}
+
+// Call this function to populate variants in the "Add Product" and "Edit Product" modals
+populateVariants('#productVariant');
+populateVariants('#editProductVariant');
+
+
+
+    $('#editProductForm').on('submit', function(e) {
+        e.preventDefault();
+        var productId = $('#editProductId').val();
+        var name = $('#editProductName').val();
+        var variant = $('#editProductVariant').val();
+        var quantity = $('#editProductQuantity').val();
+        var retailPrice = $('#editProductRetailPrice').val();
+        var promoPrice = $('#editProductPromoPrice').val();
+        var wholesalePrice = $('#editProductWholesalePrice').val();
+        var supplierPrice = $('#editProductSupplierPrice').val();
+        var supplierId = $('#editSupplierId').val();
+        var productCode = $('#editProductCode').val();
+        var description = $('#editProductDescription').val();
+
+        $.ajax({
+            url: '/edit_product',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                product_id: productId,
+                name: name,
+                variant: variant,
+                quantity: quantity,
+                retailPrice: retailPrice,
+                promoPrice: promoPrice,
+                wholesalePrice: wholesalePrice,
+                supplierPrice: supplierPrice,
+                supplierId: supplierId,
+                productCode: productCode,
+                description: description
+            }),
+            success: function(response) {
+                $('#editProductModal').modal('hide');
+                table.ajax.reload(); // Reload DataTable after editing a product
+            },
+            error: function(error) {
+                console.error('Edit product failed:', error);
+            }
+        });
+    });
+
+    $('#addProductForm').on('submit', function(e) {
+        e.preventDefault();
+        var name = $('#productName').val();
+        var variant = $('#productVariant').val();
+        var quantity = $('#productQuantity').val();
+        var retailPrice = $('#productRetailPrice').val();
+        var promoPrice = $('#productPromoPrice').val();
+        var wholesalePrice = $('#productWholesalePrice').val();
+        var supplierPrice = $('#productSupplierPrice').val();
+        var supplierId = $('#supplierId').val();
+        var productCode = $('#productCode').val();
+        var description = $('#productDescription').val();
+
+        $.ajax({
+            url: '/add_product',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                name: name,
+                variant: variant,
+                quantity: quantity,
+                retailPrice: retailPrice,
+                promoPrice: promoPrice,
+                wholesalePrice: wholesalePrice,
+                supplierPrice: supplierPrice,
+                supplierId: supplierId,
+                productCode: productCode,
+                description: description
+            }),
+            success: function(response) {
+                $('#addProductModal').modal('hide');
+                table.ajax.reload(); // Reload DataTable after adding a product
+            },
+            error: function(error) {
+                console.error('Add product failed:', error);
+            }
+        });
+    });
+
+    $("#productName").autocomplete({
+        source: function(request, response) {
+            $.ajax({
+                url: "/search_products",
+                type: "GET",
+                dataType: "json",
+                data: { query: request.term },
+                success: function(data) {
+                    response($.map(data, function(item) {
+                        return {
+                            label: item.name,
+                            value: item.name
+                        };
+                    }));
+                },
+                error: function() {
+                    response([]);
+                }
+            });
+        },
+        minLength: 1,
+        select: function(event, ui) {
+            // You can perform actions here when an item is selected
+            console.log("Selected: " + ui.item.value);
+        }
+    });
+
+    $("#editProductSupplier").autocomplete({
+        source: function(request, response) {
+            $.ajax({
+                url: "/search_suppliers",
+                type: "GET",
+                dataType: "json",
+                data: { query: request.term },
+                success: function(data) {
+                    response($.map(data, function(item) {
+                        return {
+                            label: item.name,
+                            value: item.name,
+                            id: item.supplierid
+                        };
+                    }));
+                },
+                error: function() {
+                    response([]);
+                }
+            });
+        },
+        minLength: 1,
+        select: function(event, ui) {
+            $('#editSupplierId').val(ui.item.id);
+        }
+    });
+
+    $("#productSupplier").autocomplete({
+        source: function(request, response) {
+            $.ajax({
+                url: "/search_suppliers",
+                type: "GET",
+                dataType: "json",
+                data: { query: request.term },
+                success: function(data) {
+                    response($.map(data, function(item) {
+                        return {
+                            label: item.name,
+                            value: item.name,
+                            id: item.supplierid
+                        };
+                    }));
+                },
+                error: function() {
+                    response([]);
+                }
+            });
+        },
+        minLength: 1,
+        select: function(event, ui) {
+            $('#supplierId').val(ui.item.id);
+        }
+    });
+});
+</script>
+</body>
+</html>

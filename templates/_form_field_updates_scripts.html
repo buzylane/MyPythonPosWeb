@@ -1,0 +1,202 @@
+<script>
+    function updateOrderStatus(orderId, newStatus) {
+    $.ajax({
+        url: '/update_order_status',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            order_id: orderId,
+            order_status: newStatus
+        }),
+        success: function(response) {
+            if (response.error) {
+                showAlert('Error', response.error, 'error');
+            } else {
+                showAlert('Success', 'Order status updated successfully', 'success');
+            }
+        },
+        error: function() {
+            showAlert('Error', 'Failed to update order status', 'error');
+        }
+    });
+}
+
+// Event listener for order status change
+document.getElementById('order_status').addEventListener('change', function() {
+    const orderId = document.getElementById('order_id').value;
+    const newStatus = this.value;
+    if (orderId) {
+        updateOrderStatus(orderId, newStatus);
+    } else {
+        showAlert('Error', 'Order ID is missing. Cannot update order status.', 'error');
+    }
+});
+
+
+// Function to update order field
+function updateOrderField(orderId, fieldName, newValue) {
+    $.ajax({
+        url: '/update_order_field',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            order_id: orderId,
+            field_name: fieldName,
+            new_value: newValue
+        }),
+        error: function() {
+            showAlert('Error', 'Failed to update ' + fieldName, 'error');
+        }
+    });
+}
+
+// Event listeners for changes in the respective fields
+document.getElementById('source').addEventListener('change', function() {
+    const orderId = document.getElementById('order_id').value;
+    const newSource = this.value;
+    if (orderId) {
+        updateOrderField(orderId, 'source', newSource);
+    } else {
+        showAlert('Error', 'Order ID is missing. Cannot update source.', 'error');
+    }
+});
+
+document.getElementById('pricing_mode').addEventListener('change', function() {
+    const orderId = document.getElementById('order_id').value;
+    const newPricingMode = this.value;
+    if (orderId) {
+        updateOrderField(orderId, 'pricing_mode', newPricingMode);
+    } else {
+        showAlert('Error', 'Order ID is missing. Cannot update pricing mode.', 'error');
+    }
+});
+
+document.getElementById('service_type').addEventListener('change', function() {
+    const orderId = document.getElementById('order_id').value;
+    const newServiceType = this.value;
+    if (orderId) {
+        updateOrderField(orderId, 'service_type', newServiceType);
+    } else {
+        showAlert('Error', 'Order ID is missing. Cannot update service type.', 'error');
+    }
+});
+
+document.getElementById('payment_status').addEventListener('change', function() {
+    const orderId = document.getElementById('order_id').value;
+    const newPaymentStatus = this.value;
+    if (orderId) {
+        updateOrderField(orderId, 'payment_status', newPaymentStatus);
+    } else {
+        showAlert('Error', 'Order ID is missing. Cannot update Payment Status.', 'error');
+    }
+});
+
+document.getElementById('branch_id').addEventListener('change', function() {
+    const orderId = document.getElementById('order_id').value;
+    const newBranchid = this.value;
+    if (orderId) {
+        updateOrderField(orderId, 'branch_id', newBranchid);
+    } else {
+        showAlert('Error', 'Order ID is missing. Cannot update Payment Status.', 'error');
+    }
+});
+
+document.getElementById('receiving_branch_id').addEventListener('change', function() {
+    const orderId = document.getElementById('order_id').value;
+    const newReceivingBranchId = this.value;
+    if (orderId) {
+        updateOrderField(orderId, 'receiving_branch_id', newReceivingBranchId);
+        $("#saveOrderButton").click();
+    } else {
+        showAlert('Error', 'Order ID is missing. Cannot update Branch ID.', 'error');
+    }
+});
+
+
+document.getElementById('saveBranchButton').addEventListener('click', function() {
+    const orderId = document.getElementById('order_id').value;
+    const receivingBranchId = document.getElementById('selectReceivingBranch').value;
+
+    if (orderId && receivingBranchId) {
+        updateOrderField(orderId, 'receiving_branch_id', receivingBranchId);
+        $('#selectBranchModal').modal('hide');
+    } else {
+        showAlert('Error', 'Order ID or Receiving Branch ID is missing. Cannot update.', 'error');
+    }
+});
+
+
+$(document).ready(function() {
+    function highlightEmptyFields() {
+        var customerName = $('#Customer_Name');
+        var customerContact = $('#Customer_Contact');
+        var otherFields = $('#source, #pricing_mode, #service_type, #order_amount, #total_discount, #total, #order_status, #payment_status, #delivery_date, #receiving_branch_id');
+
+        // Check if the customer name field is empty
+        if (customerName.val().trim() === '') {
+            customerName.addClass('highlight');
+            otherFields.prop('disabled', true); // Disable other fields
+        } else {
+            customerName.removeClass('highlight');
+            otherFields.prop('disabled', false); // Enable other fields
+        }
+
+        // Check if the customer contact field is empty
+        if (customerContact.val().trim() === '') {
+            customerContact.addClass('highlight');
+        } else {
+            customerContact.removeClass('highlight');
+        }
+    }
+
+    // Optionally, re-check when fields lose focus or their contents change
+    $('#Customer_Name, #Customer_Contact').on('blur keyup change', highlightEmptyFields);
+
+    // Call the function once the DOM is fully loaded, or when data loading is completed
+    $(document).ready(function() {
+        setTimeout(highlightEmptyFields, 500); // Adjust timeout to ensure data is loaded
+    });
+});
+
+
+$(document).ready(function() {
+        // Function to fetch notifications from the server
+        function fetchNotifications() {
+            $.ajax({
+                url: '/get_notifications', // Adjust the URL to your endpoint
+                method: 'GET',
+                success: function(response) {
+                    var notificationDropdown = $('#notificationDropdown');
+                    notificationDropdown.empty(); // Clear existing notifications
+
+                    if (response.notifications && response.notifications.length > 0) {
+                        response.notifications.forEach(function(notification) {
+                            var notificationItem = `
+                                <a class="dropdown-item" href="#">
+                                    <strong>${notification.title || 'No Title'}</strong><br>
+                                    <small>${new Date(notification.date).toLocaleString() || 'Invalid Date'}</small>
+                                </a>
+                            `;
+                            notificationDropdown.append(notificationItem);
+                        });
+                    } else {
+                        notificationDropdown.append('<span class="dropdown-item">No notifications</span>');
+                    }
+                },
+                error: function() {
+                    $('#notificationDropdown').append('<span class="dropdown-item">Failed to load notifications</span>');
+                }
+            });
+        }
+
+        // Call fetchNotifications on page load
+        fetchNotifications();
+
+        // Optionally, set an interval to refresh notifications
+        setInterval(fetchNotifications, 60000); // Refresh every minute
+    });
+
+
+
+
+</script>

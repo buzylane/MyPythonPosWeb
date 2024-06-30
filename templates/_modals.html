@@ -1,0 +1,437 @@
+<!-- Add Customer Modal -->
+<div class="modal fade" id="addCustomerModal" tabindex="-1" role="dialog" aria-labelledby="addCustomerModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('add_customer') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addCustomerModalLabel">Add New Customer</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Display customer error message -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                {% if category == 'danger' %}
+                                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                        {{ message }}
+                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    <div class="form-group">
+                        <label for="customer_name">Customer Name</label>
+                        <input type="text" class="form-control form-control-sm" id="customer_name" name="customer_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact">Contact</label>
+                        <input type="text" class="form-control form-control-sm" id="contact" name="contact" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact2">Contact 2</label>
+                        <input type="text" class="form-control form-control-sm" id="contact2" name="contact2">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" class="form-control form-control-sm" id="email" name="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Location</label>
+                        <input type="text" class="form-control form-control-sm" id="location" name="location">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Customer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Receive Payment Modal -->
+<div class="modal fade" id="receivePaymentModal" tabindex="-1" role="dialog" aria-labelledby="receivePaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('receive_payment') }}" id="receivePaymentForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="receivePaymentModalLabel">PAYMENTS</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-row align-items-end">
+                        <div class="col">
+                            <label for="newPaymentDate">Payment Date</label>
+                            <input type="date" id="newPaymentDate" class="form-control">
+                        </div>
+                        <div class="col">
+                            <label for="newPaymentAmount">Amount</label>
+                            <input type="number" id="newPaymentAmount" class="form-control">
+                        </div>
+                        <div class="col">
+                            <label for="newPaymentMethod">Payment Method</label>
+                            <select class="custom-select" id="newPaymentMethod">
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                        </div>
+                        <div class="col">
+                            <label for="newTransactionId">Transaction ID</label>
+                            <input type="text" id="newTransactionId" class="form-control">
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-danger" type="button" onclick="addPayment()">Add Payment</button>
+                        </div>
+                    </div>
+                    <!-- Payment History Table -->
+                    <!-- Payment History Table inside the modal -->
+                        <div class="mt-2">
+                            <table class="table table-striped" id="paymentsTable">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Date</th>
+                                        <th>Amount</th>
+                                        <th>Method</th>
+                                        <th>Ref ID</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dynamic Payment Rows Will Be Added Here -->
+                                </tbody>
+<!--                                <tfoot>-->
+<!--                                    <tr>-->
+<!--                                        <th colspan="4">Total</th>-->
+<!--                                        <th id="totalPayments">0.00</th>-->
+<!--                                    </tr>-->
+<!--                                </tfoot>-->
+                            </table>
+                        </div>
+
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delivery Info Modal -->
+<div class="modal fade" id="deliveryInfoModal" tabindex="-1" role="dialog" aria-labelledby="deliveryInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deliveryInfoModalLabel">DELIVERY INFOMATION</h5>
+                <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="deliveryForm">
+                    <div class="mb-3">
+                        <label for="order-id" class="form-label">Order ID</label>
+                        <input type="text" class="form-control" id="order-id" name="order-id" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="delivery-contact-name" class="form-label">Contact Name</label>
+                        <input type="text" class="form-control" id="delivery-contact-name" name="delivery-contact-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="delivery-contact-number" class="form-label">Contact Number</label>
+                        <input type="tel" class="form-control" id="delivery-contact-number" name="delivery-contact-number" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="delivery-address" class="form-label">Delivery Address</label>
+                        <textarea class="form-control" id="delivery-address" name="delivery-address" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="delivery-status" class="form-label">Delivery Status</label>
+                        <select class="form-control" id="delivery-status" name="delivery-status">
+                            <option>Preparing</option>
+                            <option>Shipped</option>
+                            <option>Delivered</option>
+                            <option>Delayed</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="expected-delivery-date" class="form-label">Expected Delivery Date</label>
+                        <input type="date" class="form-control" id="expected-delivery-date" name="expected-delivery-date" value="{{ today }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="courier-name" class="form-label">Courier Name</label>
+                        <input type="text" class="form-control" id="courier-name" name="courier-name">
+                    </div>
+                    <div class="mb-3">
+                        <label for="tracking-number" class="form-label">Tracking Number</label>
+                        <input type="text" class="form-control" id="tracking-number" name="tracking-number">
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Additional Notes</label>
+                        <textarea class="form-control" id="notes" name="notes"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Delivery Info</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Modal -->
+<div class="modal fade" id="sendEmailModal" tabindex="-1" role="dialog" aria-labelledby="sendEmailModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sendEmailModalLabel">Send Email</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="sendEmailForm">
+                    <div class="form-group">
+                        <label for="emailRecipient">Recipient Email</label>
+                        <input type="email" class="form-control" id="emailRecipient" name="recipient" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="emailSubject">Subject</label>
+                        <input type="text" class="form-control" id="emailSubject" name="subject" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="emailMessage">Message</label>
+                        <textarea class="form-control" id="emailMessage" name="message" rows="5" required></textarea>
+                    </div>
+                    <input type="hidden" id="orderId" name="order_id" value="">
+                    <button type="submit" class="btn btn-primary">Send Email</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add a hidden field for receiving branch ID -->
+<input type="hidden" id="receiving_branch_id_modal" name="receiving_branch_id_modal" value="">
+
+<!-- Modal for selecting the receiving branch -->
+<div class="modal fade" id="branchModal" tabindex="-1" aria-labelledby="branchModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="branchModalLabel">Select Receiving Branch</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="branchForm">
+                    <div class="form-group">
+                        <label for="branchSelect">Branch</label>
+                        <select class="form-control" id="branchSelect">
+                            {% for branch in branches %}
+                                <option value="{{ branch[0] }}" {% if branch[0] == order_details[19] %}selected{% endif %}>{{ branch[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveBranchButton">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<script>
+
+
+
+$(document).ready(function() {
+    // Set default date for expected delivery date
+    $('#expected-delivery-date').val(new Date().toISOString().slice(0, 10));
+
+    // Open the modal and load data
+    $('#deliveryInfoModal').on('show.bs.modal', function(event) {
+        var button = $(event.relatedTarget); // Button that triggered the modal
+        var orderId = button.data('order-id'); // Extract info from data-* attributes
+        $('#order-id').val(orderId);
+
+        // Assume function fetchDeliveryInfo exists and fetches info based on orderId
+        fetchDeliveryInfo(orderId);
+    });
+
+    // Save delivery info
+    $('#deliveryForm').on('submit', function(event) {
+        event.preventDefault();
+        var formData = $(this).serialize(); // Serialize the form data.
+        saveDeliveryInfo(formData); // Assume this function sends data to the server.
+    });
+});
+
+function fetchDeliveryInfo(orderId) {
+    // AJAX call to get delivery info for the given orderId
+    // Update form fields with the fetched data
+}
+
+function saveDeliveryInfo(formData) {
+    // AJAX call to save the delivery info
+    // Provide feedback to the user or update UI accordingly
+}
+
+
+
+$(document).ready(function() {
+    // Open the Receive Payment Modal and populate data
+    function openReceivePaymentModal() {
+        // Fetch the order amount from the main form and set it in the modal
+        var orderAmount = $('#order_amount').val();
+        $('#modal_order_amount').val(orderAmount);
+
+        // Set today's date as the default payment date
+        var today = new Date().toISOString().slice(0, 10);
+        $('#payment_date').val(today);
+
+        // Fetch and populate payment methods
+        fetchPaymentMethods();
+
+        // Fetch payment history (assuming an order ID is available in the context)
+        var orderId = $('#order_id').val(); // Adjust this if your order ID is stored differently
+        if (orderId) {
+            getPaymentHistory(orderId);
+        }
+
+        $('#receivePaymentModal').modal('show');
+    }
+
+    // Fetch payment methods from the server
+    function fetchPaymentMethods() {
+        $.ajax({
+            url: '/get_payment_methods',
+            method: 'GET',
+            success: function(response) {
+                var paymentMethodSelect = $('#payment_method');
+                paymentMethodSelect.empty(); // Clear existing options
+                response.forEach(function(method) {
+                    paymentMethodSelect.append(new Option(method.method_name, method.method_id));
+                });
+            },
+            error: function() {
+                alert('Failed to fetch payment methods');
+            }
+        });
+    }
+
+    // Fetch payment history for the given order ID
+    function getPaymentHistory(orderId) {
+        $.ajax({
+            url: `/get_order_payments/${orderId}`,
+            method: 'GET',
+            success: function(data) {
+                var paymentHistoryBody = $('#paymentHistoryTableBody');
+                paymentHistoryBody.empty(); // Clear existing rows
+                data.payments.forEach(function(payment) {
+                    paymentHistoryBody.append(`
+                        <tr>
+                            <td>${payment.paymentdate}</td>
+                            <td>${payment.amount}</td>
+                            <td>${payment.paymentmethod}</td>
+                            <td>${payment.transaction_id}</td>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="removePayment(this)">Remove</button>
+
+                        </tr>
+                    `);
+                });
+            },
+            error: function() {
+                alert('Failed to fetch payment history');
+            }
+        });
+    }
+
+    // Initialize the modal when the "Receive Payment" button is clicked
+    $('#receivePaymentBtn').on('click', function() {
+        openReceivePaymentModal();
+    });
+
+    // Handle the form submission
+    $('#receivePaymentForm').on('submit', function(e) {
+        e.preventDefault();
+        $.ajax({
+            url: $(this).attr('action'),
+            method: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                if (response.success) {
+                    alert('Payment recorded successfully');
+                    $('#receivePaymentModal').modal('hide');
+                    location.reload(); // Refresh the page
+                } else {
+                    alert('Failed to record payment: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Error submitting payment');
+            }
+        });
+    });
+});
+
+function addPayment() {
+    const paymentDate = $('#newPaymentDate').val();
+    const amount = $('#newPaymentAmount').val();
+    const paymentMethodId = $('#newPaymentMethod').val();
+    const transactionId = $('#newTransactionId').val();
+    const orderId = $('#order_id').val();
+
+    // Ensure all fields are filled
+    if (!paymentDate || !amount || !paymentMethodId) {
+        alert('Please fill all required fields.');
+        return;
+    }
+
+    $.ajax({
+        url: '/add_payment', // URL where you handle the POST request
+        method: 'POST',
+        data: {
+            order_id: orderId,
+            payment_date: paymentDate,
+            amount: amount,
+            payment_method_id: paymentMethodId,
+            transaction_id: transactionId
+        },
+        success: function(response) {
+            if (response.success) {
+                // Append new payment to the payment history table
+                $('#paymentHistoryTableBody').append(`
+                    <tr>
+                        <td>${paymentDate}</td>
+                        <td>${amount}</td>
+                        <td>${$('#newPaymentMethod option:selected').text()}</td>
+                        <td>${transactionId}</td>
+
+                    </tr>
+                `);
+                // Clear input fields after adding
+                $('#newPaymentDate').val('');
+                $('#newPaymentAmount').val('');
+                $('#newTransactionId').val('');
+                $('#newPaymentMethod').val('');
+            } else {
+                alert('Failed to add payment: ' + response.error);
+            }
+        },
+        error: function() {
+            alert('Error adding payment. Please try again.');
+        }
+    });
+}
+
+</script>

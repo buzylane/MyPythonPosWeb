@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>Orders/Transactions</h1>
+    <form method="post" action="{{ url_for('filter_orders') }}">
+        <div class="form-group">
+            <label for="filter">Filter Orders:</label>
+            <select class="form-control" id="filter" name="filter_type">
+                <option value="today">Today's Orders</option>
+                <option value="month">This Month's Orders</option>
+                <option value="cancelled">Cancelled Orders</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Filter</button>
+    </form>
+    <table class="table mt-4">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Transaction Date</th>
+                <th>Source</th>
+                <th>Service Type</th>
+                <th>Customer Name</th>
+                <th>Customer Contact</th>
+                <th>Order Notes</th>
+                <th>Amount</th>
+                <th>Discount</th>
+                <th>Total Amount</th>
+                <th>Status</th>
+                <th>Payment</th>
+                <th>External Payment</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+                <tr>
+                    <td>{{ order[0] }}</td>
+                    <td>{{ order[1] }}</td>
+                    <td>{{ order[2] }}</td>
+                    <td>{{ order[3] }}</td>
+                    <td>{{ order[4] }}</td>
+                    <td>{{ order[5] }}</td>
+                    <td>{{ order[6] }}</td>
+                    <td>{{ order[7] }}</td>
+                    <td>{{ order[8] }}</td>
+                    <td>{{ order[9] }}</td>
+                    <td>{{ order[10] }}</td>
+                    <td>{{ order[11] }}</td>
+                    <td>{{ order[12] }}</td>
+                    <td>
+                        <a href="{{ url_for('order_details', order_id=order[0]) }}" class="btn btn-info">Edit</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

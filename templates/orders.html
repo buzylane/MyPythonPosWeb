@@ -1,0 +1,156 @@
+{% extends "layout.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/fixedheader/3.1.7/css/fixedHeader.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/1.6.2/css/buttons.dataTables.min.css">
+{% endblock %}
+
+{% block title %}Orders{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Today's orders</h2>
+</div>
+<div class="table-responsive mb-5">
+    <table id="ordersTodayTable" class="table table-striped table-hover">
+        <thead class="thead-dark">
+            <tr>
+                <th>Order ID</th>
+                <th>Delivery Date</th>
+                <th>Source</th>
+                <th>Service</th>
+                <th>Customer Name</th>
+                <th>Customer Contact</th>
+                <th>Total Amount</th>
+                <th>Discount</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Payment Status</th>
+                <th>Order Date</th>
+                <th>User</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders_today %}
+            <tr>
+                <td><a href="{{ url_for('add_order', order_id=order[0]) }}">{{ order[0] }}</a></td>
+                <td>{{ order[11] }}</td>
+                <td>{{ order[2] }}</td>
+                <td>{{ order[3] }}</td>
+                <td>{{ order[4] }}</td>
+                <td>{{ order[5] }}</td>
+                <td>{{ order[6] }}</td>
+                <td>{{ order[7] }}</td>
+                <td>{{ order[8] }}</td>
+                <td>{{ order[9] }}</td>
+                <td>{{ order[10] }}</td>
+                <td>{{ order[1] }}</td>
+                <td>{{ order[12] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>All Orders</h2>
+    <a href="{{ url_for('add_order') }}" class="btn btn-success">POS</a>
+</div>
+<div class="table-responsive">
+    <table id="ordersTable" class="table table-striped table-hover">
+        <thead class="thead-dark">
+            <tr>
+                <th>Order ID</th>
+                <th>Delivery Date</th>
+                <th>Source</th>
+                <th>Service</th>
+                <th>Customer Name</th>
+                <th>Customer Contact</th>
+                <th>Total Amount</th>
+                <th>Discount</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Payment Status</th>
+                <th>Order Date</th>
+                <th>User</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td><a href="{{ url_for('add_order', order_id=order[0]) }}">{{ order[0] }}</a></td>
+                <td>{{ order[11] }}</td>
+                <td>{{ order[2] }}</td>
+                <td>{{ order[3] }}</td>
+                <td>{{ order[4] }}</td>
+                <td>{{ order[5] }}</td>
+                <td>{{ order[6] }}</td>
+                <td>{{ order[7] }}</td>
+                <td>{{ order[8] }}</td>
+                <td>{{ order[9] }}</td>
+                <td>{{ order[10] }}</td>
+                <td>{{ order[1] }}</td>
+                <td>{{ order[12] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/fixedheader/3.1.7/js/dataTables.fixedHeader.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.6.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.6.2/js/buttons.print.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.6.2/js/buttons.flash.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.6.2/js/buttons.colVis.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+<script>
+    $(document).ready(function() {
+        var todayTable = $('#ordersTodayTable').DataTable({
+            "paging": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "dom": 'Bfrtip',
+            "buttons": [
+                'copy', 'csv', 'excel', 'pdf', 'print'
+            ],
+            "columnDefs": [
+                {
+                    "targets": 1, // Index of the Delivery Date column
+                    "render": function (data, type, row) {
+                        return moment(data).format('DD-MM-YY');
+                    }
+                }
+            ]
+        });
+        new $.fn.dataTable.FixedHeader(todayTable);
+
+        var table = $('#ordersTable').DataTable({
+            "paging": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "dom": 'Bfrtip',
+            "buttons": [
+                'copy', 'csv', 'excel', 'pdf', 'print'
+            ],
+            "columnDefs": [
+                {
+                    "targets": 1, // Index of the Delivery Date column
+                    "render": function (data, type, row) {
+                        return moment(data).format('DD-MM-YY');
+                    }
+                }
+            ]
+        });
+        new $.fn.dataTable.FixedHeader(table);
+    });
+</script>
+{% endblock %}

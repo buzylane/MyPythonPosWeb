@@ -1,0 +1,55 @@
+<div class="form-group">
+    <!-- Product Details -->
+    <div class="form-row align-items-end"> <!-- Add align-items-end to align items at the bottom -->
+        <div class="form-group col-md-1">
+            <label for="Product_Code">Product Code</label>
+            <input type="text" class="form-control form-control-sm product-input" id="Product_Code" name="Product_Code" autocomplete="off">
+        </div>
+        <div class="form-group col-md-3">
+            <label for="Product">Product</label>
+            <input type="text" class="form-control form-control-sm product-input" id="Product" name="Product" autocomplete="off">
+        </div>
+        <div class="form-group col-md-1">
+            <label for="Variant">Variant</label>
+            <select class="form-control form-control-sm product-input" id="Variant" name="Variant">
+                <!-- Options will be populated by JavaScript -->
+            </select>
+        </div>
+        <div class="form-group col-md-1">
+            <label for="Quantity">Quantity</label>
+            <input type="number" class="form-control form-control-sm product-input" id="Quantity" name="Quantity" value="1">
+        </div>
+        <div class="form-group col-md-1">
+            <label for="Unit_Price">Unit Price</label>
+            <input type="number" class="form-control form-control-sm product-input" id="Unit_Price" name="Unit_Price" readonly>
+        </div>
+        <div class="form-group col-md-1">
+            <label for="discount">Discount</label>
+            <input type="number" class="form-control form-control-sm product-input" id="discount" name="discount">
+        </div>
+        <div class="form-group col-md-1">
+            <label for="Total_Amount">Total Amount</label>
+            <input type="number" class="form-control form-control-sm product-input" id="Total_Amount" name="Total_Amount" readonly>
+        </div>
+        <div class="form-group col-md-2">
+            <button type="button"  class="btn btn-secondary" onclick="addProductRow()">Add Product</button>
+        </div>
+    </div>
+    <table class="table table-striped" id="productTable">
+        <thead class="thead-dark">
+            <tr>
+                <th>Product Code</th>
+                <th>Product Name</th>
+                <th>Variant</th>
+                <th>Unit Price</th>
+                <th>Discount</th>
+                <th>Quantity</th>
+                <th>Total Amount</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Dynamic Product Rows Will Be Added Here -->
+        </tbody>
+    </table>
+</div>

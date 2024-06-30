@@ -1,0 +1,1385 @@
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.3.4/dist/sweetalert2.min.js"></script>
+<script>
+        function showAlert(title, text, icon) {
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: icon,
+                showConfirmButton: false,
+                timer: 3000
+            });
+        }
+
+        $(function() {
+    $("#Customer_Name").autocomplete({
+        source: function(request, response) {
+            $.ajax({
+                url: "/search_customers",
+                data: { query: request.term.toLowerCase() },
+                success: function(data) {
+                    response($.map(data, function(item) {
+                        return {
+                            label: item.name + " - " + item.contact,
+                            value: item.name,
+                            contact: item.contact,
+                            id: item.id,
+                            branch_id: item.branch_id,
+                            branch_name: item.branch_name,
+                            branch_contact: item.branch_contact
+                        };
+                    }));
+                }
+            });
+        },
+        minLength: 2,
+        select: function(event, ui) {
+            $("#Customer_Name").val(ui.item.value);
+            $("#Customer_Contact").val(ui.item.contact);
+            $("#Customer_ID").val(ui.item.id);
+
+            if (ui.item.branch_id) {
+                $("#branch_id").val(ui.item.branch_id);
+                $("#branch_name").val(ui.item.branch_name);
+                $("#branch_contact").val(ui.item.branch_contact);
+            }
+
+            $("#saveOrderButton").click();
+            return false;
+        }
+    });
+
+            $("#Product_Code").autocomplete({
+    source: function(request, response) {
+        $.ajax({
+            url: "/search_products",
+            data: { query: request.term.toLowerCase() },
+            success: function(data) {
+                response($.map(data, function(item) {
+                    return {
+                        label: item[2],
+                        value: item[2]
+                    };
+                }));
+            }
+        });
+    },
+    minLength: 2,
+    select: function(event, ui) {
+        $("#Product_Code").val(ui.item.value);
+        clearProductFields();
+        const pricingMode = $("#pricing_mode").val(); // Assuming there's a field with the ID 'pricing_mode'
+        fetchProductDetails(ui.item.value, pricingMode);
+        return false;
+    }
+});
+
+            $("#Product").autocomplete({
+    source: function(request, response) {
+        $.ajax({
+            url: "/search_products",
+            data: { query: request.term.toLowerCase() },
+            success: function(data) {
+                response($.map(data, function(item) {
+                    return {
+                        label: item[1],
+                        value: item[1],
+                        product_code: item[0]
+                    };
+                }));
+            }
+        });
+    },
+    minLength: 2,
+    select: function(event, ui) {
+        $("#Product").val(ui.item.value);
+        const pricingMode = $("#pricing_mode").val(); // Assuming there's a field with the ID 'pricing_mode'
+        fetchProductDetailsByName(ui.item.value, pricingMode);
+        return false;
+    }
+});
+
+            $("#Variant").change(function() {
+                const productName = $("#Product").val();
+                const variant = $(this).val();
+                const pricingMode = $("#pricing_mode").val();
+                fetchVariantDetails(productName, variant, pricingMode);
+            });
+
+            $('.product-input').on('keypress', function(e) {
+                if (e.which == 43) {
+                    addProductRow();
+                    return false;
+                }
+            });
+
+            document.addEventListener('DOMContentLoaded', function() {
+                const messages = {{ get_flashed_messages(with_categories=true) | tojson }};
+                messages.forEach(function(message) {
+                    showAlert(message[1], '', message[0] === 'danger' ? 'error' : 'success');
+                });
+            });
+        });
+
+        function clearProductFields() {
+            $("#Product").val('');
+            $("#Variant").empty();
+            $("#Unit_Price").val('');
+            $("#discount").val('');
+            $("#Quantity").val(1);
+            $("#Total_Amount").val('');
+        }
+
+        function fetchProductDetails(productCode, pricingMode) {
+    fetch(`/get_product_details_by_code?product_code=${productCode}&pricing_mode=${pricingMode}`)
+        .then(response => response.json())
+        .then(data => {
+            if (!data.error) {
+                $("#Product").val(data.name);
+                $("#Unit_Price").val(data.unit_price);
+                $("#discount").val(data.discount);
+                $("#Product_Code").val(data.product_id);
+                fetchVariants(data.name, data.variant);
+                calculateTotalAmount();
+            } else {
+                showAlert('Error', 'Failed to fetch product details', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching product details:', error);
+            showAlert('Error', 'Failed to fetch product details', 'error');
+        });
+}
+
+        function fetchProductDetailsByName(productName, pricingMode) {
+    fetch(`/get_product_details_by_name?product_name=${productName}&pricing_mode=${pricingMode}`)
+        .then(response => response.json())
+        .then(data => {
+            if (!data.error) {
+                $("#Product_Code").val(data.product_code);
+                $("#Unit_Price").val(data.unit_price);
+                $("#discount").val(data.discount);
+                fetchVariants(productName);
+                calculateTotalAmount();
+            } else {
+                showAlert('Error', 'Failed to fetch product details by name', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching product details by name:', error);
+            showAlert('Error', 'Failed to fetch product details by name', 'error');
+        });
+}
+
+function fetchVariants(productName, selectedVariant = null) {
+    const pricingMode = $("#pricing_mode").val(); // Ensure this element exists in your HTML
+
+    console.log('Pricing Mode:', pricingMode); // Debugging: Check the value of pricingMode
+
+    fetch(`/get_variants?product_name=${productName}`)
+        .then(response => response.json())
+        .then(data => {
+            const variantSelect = $("#Variant");
+            variantSelect.empty();
+            data.forEach(variant => {
+                const option = new Option(variant, variant);
+                if (variant === selectedVariant) {
+                    option.selected = true;
+                }
+                variantSelect.append(option);
+            });
+            if (!selectedVariant && data.length > 0) {
+                fetchVariantDetails(productName, data[0], pricingMode);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching variants:', error);
+            showAlert('Error', 'Failed to fetch variants', 'error');
+        });
+}
+
+
+
+
+
+        function fetchVariantDetails(productName, variant, pricingMode) {
+    fetch(`/get_variant_details?product_name=${encodeURIComponent(productName)}&variant=${encodeURIComponent(variant)}&pricing_mode=${pricingMode}`)
+        .then(response => response.json())
+        .then(data => {
+            if (!data.error) {
+                $("#Product_Code").val(data.product_code);
+                $("#Unit_Price").val(data.unit_price);
+                $("#discount").val(data.discount);
+                calculateTotalAmount();
+            } else {
+                showAlert('Error', 'Failed to fetch details for the selected variant', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching variant details:', error);
+            showAlert('Error', 'Failed to fetch details for the selected variant', 'error');
+        });
+}
+
+
+        document.getElementById('Quantity').addEventListener('input', calculateTotalAmount);
+        document.getElementById('Unit_Price').addEventListener('input', calculateTotalAmount);
+        document.getElementById('discount').addEventListener('input', calculateTotalAmount);
+
+        function calculateTotalAmount() {
+            const quantity = $("#Quantity").val();
+            const unitPrice = $("#Unit_Price").val();
+            const discount = $("#discount").val();
+            const totalAmount = (quantity * unitPrice) - discount;
+            $("#Total_Amount").val(totalAmount.toFixed(2));
+            updateTotals();
+        }
+
+        function addProductRow() {
+            const productCode = $("#Product_Code").val();
+            const productName = $("#Product").val();
+            const variant = $("#Variant").val();
+            const unitPrice = $("#Unit_Price").val();
+            const discount = $("#discount").val();
+            const quantity = $("#Quantity").val();
+            const totalAmount = $("#Total_Amount").val();
+
+            if (productCode && productName && variant && unitPrice && quantity && totalAmount) {
+                const table = $("#productTable tbody")[0];
+                const newRow = table.insertRow();
+
+                const cell1 = newRow.insertCell(0);
+                const cell2 = newRow.insertCell(1);
+                const cell3 = newRow.insertCell(2);
+                const cell4 = newRow.insertCell(3);
+                const cell5 = newRow.insertCell(4);
+                const cell6 = newRow.insertCell(5);
+                const cell7 = newRow.insertCell(6);
+                const cell8 = newRow.insertCell(7);
+
+                cell1.innerHTML = `<input type="hidden" name="Product_Code[]" value="${productCode}">${productCode}`;
+                cell2.innerHTML = `<input type="hidden" name="Product[]" value="${productName}">${productName}`;
+                cell3.innerHTML = `<input type="hidden" name="Variant[]" value="${variant}">${variant}`;
+                cell4.innerHTML = `<input type="hidden" name="Unit_Price[]" value="${unitPrice}">${unitPrice}`;
+                cell5.innerHTML = `<input type="hidden" name="discount[]" value="${discount}">${discount}`;
+                cell6.innerHTML = `<input type="hidden" name="Quantity[]" value="${quantity}">${quantity}`;
+                cell7.innerHTML = `<input type="hidden" name="Total_Amount[]" value="${totalAmount}">${totalAmount}`;
+                cell8.innerHTML = '<button type="button" class="btn btn-danger btn-sm" onclick="removeProductRow(this)">Remove</button>';
+
+                $("#Product_Code").val('');
+                clearProductFields();
+                updateTotals();
+                calculateOrderValues();
+                $("#Product_Code").focus();
+
+                // Automatically trigger save order after adding a product
+                $("#saveOrderButton").click();
+            } else {
+                showAlert('Incomplete details', 'Please fill in all product details', 'error');
+            }
+        }
+
+        function removeProductRow(button) {
+            const row = button.parentNode.parentNode;
+            row.parentNode.removeChild(row);
+            updateTotals();
+            $("#saveOrderButton").click();
+        }
+
+        function updateTotals() {
+            let totalBill = 0;
+            let totalDiscount = 0;
+            const rows = $("#productTable tbody tr");
+
+            rows.each(function() {
+                const unitPrice = parseFloat($(this).find('td:eq(3)').text());
+                const discount = parseFloat($(this).find('td:eq(4)').text());
+                const quantity = parseInt($(this).find('td:eq(5)').text());
+
+                totalBill += unitPrice * quantity;
+                totalDiscount += discount * quantity;
+            });
+
+            const grandTotal = totalBill - totalDiscount;
+
+            $("#totalBill").text(totalBill.toFixed(2));
+            $("#totalDiscount").text(totalDiscount.toFixed(2));
+            $("#grandTotal").text(grandTotal.toFixed(2));
+
+            $("#order_amount").val(grandTotal.toFixed(2));
+            $("#total_discount").val(totalDiscount.toFixed(2));
+            calculateAndDisplayTotals();
+        }
+
+        $(document).ready(function() {
+            $("#Product_Code").focus();
+            $("#order_amount").val('0.00');
+            $("#total_discount").val('0.00');
+            $("#payment_status").val('{{ default_payment_status }}');
+        });
+
+        $(document).ready(function() {
+            const orderId = new URLSearchParams(window.location.search).get('order_id');
+            if (orderId) {
+                fetchOrderDetails(orderId);
+                fetchOrderPayments(orderId);
+            }
+        });
+
+
+function fetchOrderDetails(orderId) {
+    fetch(`/get_order_details?order_id=${orderId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert('Error', 'Failed to fetch order details', 'error');
+                return;
+            }
+
+            // Populate the form with the fetched order details
+            $("#Customer_Name").val(data.customer_name);
+            $("#Customer_Contact").val(data.customer_contact);
+            $("#Customer_ID").val(data.customer_id); // Correctly set the customer ID
+
+            // Populate other fields as needed
+            $("#source").val(data.source_id);  // Set the order source
+            $("#service_type").val(data.service_id);
+            $("#pricing_mode").val(data.pricing_mode_id); // Set the pricing mode
+            $("#order_amount").val(data.total_amount);
+            $("#total_discount").val(data.discount);
+            $("#total").val(data.total);
+            $("#order_status").val(data.status);
+            $("#payment_status").val(data.payment_status);
+            $("#delivery_date").val(data.delivery_date);
+            $("#order_id").val(data.order_id);
+            $("#receiving_branch_id").val(data.receiving_branch_id);
+
+            // Set branch ID and name
+            $("#branch_id").val(data.branch_id);  // Set the branch ID
+            $("#branch_name").val(data.branch_name);  // Set the branch name (if you have an input field for it)
+
+            // Fetch and display product details
+            const productTableBody = $("#productTable tbody");
+            productTableBody.empty(); // Clear existing rows
+
+            data.products.forEach(product => {
+                const newRow = `
+                    <tr>
+                        <td><input type="hidden" name="Product_Code[]" value="${product.product_code}">${product.product_code}</td>
+                        <td><input type="hidden" name="Product[]" value="${product.product_name}">${product.product_name}</td>
+                        <td><input type="hidden" name="Variant[]" value="${product.variant}">${product.variant}</td>
+                        <td><input type="hidden" name="Unit_Price[]" value="${product.unit_price}">${product.unit_price}</td>
+                        <td><input type="hidden" name="discount[]" value="${product.discount}">${product.discount}</td>
+                        <td><input type="hidden" name="Quantity[]" value="${product.quantity}">${product.quantity}</td>
+                        <td><input type="hidden" name="Total_Amount[]" value="${product.total_amount}">${product.total_amount}</td>
+                        <td><button type="button" class="btn btn-danger btn-sm" onclick="removeProductRow(this)">Remove</button></td>
+                    </tr>
+                `;
+                productTableBody.append(newRow);
+            });
+            updateTotals();
+
+            // Log values for troubleshooting
+            console.log('Receiving Branch ID from data:', data.receiving_branch_id);
+            console.log('Current User Branch ID from input:', $('#currentUserBranchId').val());
+
+            // Check if the source is '5' and disable the finalize order button
+            if (data.source_id == '5') {
+                console.log('Disabling finalize order button due to the source condition');
+                $("#finalizeOrderButton").prop('disabled', true);
+            }
+
+            // Check if the receiving_branch_id matches the current user's branch_id and payment_status is not 5
+            const currentUserBranchId = $('#currentUserBranchId').val(); // Retrieve the current user's branch ID value
+            if (data.receiving_branch_id == currentUserBranchId) {
+                console.log('Activating finalize order button due to matching branch ids and payment status not being 5');
+                $("#finalizeOrderButton").prop('disabled', false);
+                $("#receiving_branch_id").prop('disabled', true);
+                $("#source").prop('disabled', true);
+            } else {
+                console.log('Finalize order button remains disabled due to branch id mismatch or payment status being 5');
+                $("#finalizeOrderButton").prop('disabled', true);
+            }
+
+            // Check payment status and disable fields if necessary
+            if (data.payment_status == '2') { // Assuming '2' is the value for 'Completed'
+                console.log('Disabling order fields and buttons due to completed payment status');
+                disableOrderFieldsAndButtons();
+            }
+
+            // Disable pricing_mode if there are products in the order
+            if (data.products.length > 0) {
+                console.log('Disabling pricing mode due to existing products in the order');
+                $("#pricing_mode").prop('disabled', true);
+            }
+
+        })
+        .catch(error => {
+            console.error('Error fetching order details:', error);
+            showAlert('Error', 'Failed to fetch order details', 'error');
+        });
+}
+
+
+
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const messages = {{ get_flashed_messages(with_categories=true) | tojson }};
+            messages.forEach(function(message) {
+                Swal.fire({
+                    icon: message[0] === 'danger' ? 'error' : 'success',
+                    title: message[1],
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            });
+        });
+
+        $(function() {
+            function highlightEmptyFields() {
+                // Select the customer name and contact fields
+                var customerName = $('#Customer_Name');
+                var customerContact = $('#Customer_Contact');
+
+                console.log('Customer Name:', customerName.val());  // Debug: Log value
+                console.log('Customer Contact:', customerContact.val());  // Debug: Log value
+
+                // Check if the customer name field is empty
+                if (customerName.val().trim() === '') {
+                    customerName.addClass('highlight');
+                } else {
+                    customerName.removeClass('highlight');
+                }
+
+                // Check if the customer contact field is empty
+                if (customerContact.val().trim() === '') {
+                    customerContact.addClass('highlight');
+                } else {
+                    customerContact.removeClass('highlight');
+                }
+            }
+
+            // Optionally, re-check when fields lose focus or their contents change
+            $('#Customer_Name, #Customer_Contact').on('blur keyup change', highlightEmptyFields);
+
+            // Call the function once DOM is fully loaded, or when data loading is completed
+            $(document).ready(function() {
+                setTimeout(highlightEmptyFields, 500); // Adjust timeout to ensure data is loaded
+            });
+        });
+
+        function generateInvoice() {
+            // Example assuming order_id is stored in a hidden input field with id "order_id"
+            var orderId = document.getElementById('order_id').value;
+
+            if (!orderId) {
+                // Fallback if you want to fetch from URL or show an error
+                console.error('Order ID is undefined');
+                return; // Stop the function if no order ID
+            }
+
+            window.location.href = `/generate_invoice/${orderId}`;
+        }
+
+        function printReceipt(orderId) {
+            var orderId = document.getElementById('order_id').value;
+            if (!orderId) {
+                console.error('Order ID is undefined');
+                return;
+            }
+            var printWindow = window.open(`/print_receipt/${orderId}`, 'PrintWindow');
+            printWindow.onload = function() {
+                printWindow.print();
+            }
+        }
+
+        function scrollToLastOrder() {
+            var productTableBody = document.getElementById('productTable').getElementsByTagName('tbody')[0];
+            if (productTableBody.lastChild) {
+                productTableBody.lastChild.scrollIntoView({behavior: 'smooth', block: 'end'});
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            scrollToLastOrder();
+        });
+
+        $(document).ready(function() {
+    // Function to format dates to YYYY-MM-DD
+    function formatDate(date) {
+        var d = new Date(date),
+            month = '' + (d.getMonth() + 1),
+            day = '' + d.getDate(),
+            year = d.getFullYear();
+
+        if (month.length < 2)
+            month = '0' + month;
+        if (day.length < 2)
+            day = '0' + day;
+
+        return [year, month, day].join('-');
+    }
+
+    // Trigger when the delivery info modal is about to be shown
+    $('#deliveryInfoModal').on('show.bs.modal', function(event) {
+        // Assuming 'orderId' is available globally or you fetch it from the DOM
+        var orderId = $('#order_id').val() || '{{ order_id }}'; // Adjust based on how order ID is stored
+        var today = formatDate(new Date()); // Get today's date in YYYY-MM-DD format
+        var customerName = $('#Customer_Name').val() || '{{ Customer_Name }}'; // Get the customer name from the order form
+        var customerContact = $('#Customer_Contact').val(); // Get the customer contact from the order form
+
+        // Set the order ID, today's date, customer name, and contact in the modal form
+        $('#deliveryInfoModal #order-id').val(orderId);
+        $('#deliveryInfoModal #expected-delivery-date').val(today);
+        $('#deliveryInfoModal #delivery-contact-name').val(customerName);
+        $('#deliveryInfoModal #delivery-contact-number').val(customerContact);
+    });
+});
+
+
+$(document).ready(function() {
+    $('#deliveryForm').submit(function(event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        var deliveryData = {
+            orderId: $('#deliveryInfoModal #order-id').val(),
+            deliveryStatus: $('#deliveryInfoModal #delivery-status').val(),
+            expectedDeliveryDate: $('#deliveryInfoModal #expected-delivery-date').val(),
+            contactName: $('#deliveryInfoModal #delivery-contact-name').val(),
+            contactNumber: $('#deliveryInfoModal #delivery-contact-number').val(),
+            deliveryAddress: $('#deliveryInfoModal #delivery-address').val(),
+            courierName: $('#deliveryInfoModal #courier-name').val(),
+            trackingNumber: $('#deliveryInfoModal #tracking-number').val(),
+            notes: $('#deliveryInfoModal #notes').val()
+        };
+
+        saveDeliveryInfo(deliveryData);
+    });
+});
+
+$('#deliveryInfoModal').on('show.bs.modal', function(event) {
+    var orderId = $('#order_id').val() || '{{ order_id }}';
+    $.ajax({
+        url: '/get_delivery_info',
+        type: 'GET',
+        data: {order_id: orderId},
+        success: function(response) {
+            if (response.success && response.deliveryInfo) {
+                var info = response.deliveryInfo;
+                // Set values from response or set defaults if null
+                $('#deliveryInfoModal #order-id').val(orderId);
+                $('#deliveryInfoModal #delivery-contact-name').val(info.contactName || '');
+                $('#deliveryInfoModal #delivery-contact-number').val(info.contactNumber || '');
+                $('#deliveryInfoModal #delivery-address').val(info.deliveryAddress || '');
+                $('#deliveryInfoModal #expected-delivery-date').val(info.expectedDeliveryDate || formatDate(new Date()));
+                $('#deliveryInfoModal #delivery-status').val(info.deliveryStatus || 'Preparing');
+                $('#deliveryInfoModal #courier-name').val(info.courierName || '');
+                $('#deliveryInfoModal #tracking-number').val(info.trackingNumber || '');
+                $('#deliveryInfoModal #notes').val(info.notes || '');
+            } else {
+                // Set defaults
+                $('#deliveryInfoModal #order-id').val(orderId);
+                $('#deliveryInfoModal #expected-delivery-date').val(formatDate(new Date()));
+                $('#deliveryInfoModal').find('input[type=text], textarea').val('');
+            }
+        },
+        error: function() {
+            alert('Failed to fetch delivery information. Please try again.');
+        }
+    });
+});
+
+
+function saveDeliveryInfo(deliveryData) {
+    $.ajax({
+        url: '/save_delivery_info', // Your Flask endpoint
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(deliveryData),
+        success: function(response) {
+            if (response.success) {
+                alert('Delivery information saved successfully.');
+                $('#deliveryInfoModal').modal('hide');
+            } else {
+                alert('Failed to save delivery information: ' + response.error);
+            }
+        },
+        error: function() {
+            alert('Failed to connect to the server. Please try again later.');
+        }
+    });
+}
+
+
+        $(document).ready(function() {
+            // Function to scroll to the last order
+            function scrollToLastOrder() {
+                var $lastRow = $('#productTable tbody tr:last-child');
+                if ($lastRow.length) {
+                    $('html, body').animate({
+                        scrollTop: $lastRow.offset().top
+                    }, 1000);
+                }
+            }
+
+            // Check if there are any active AJAX requests
+            $(document).ajaxStop(function() {
+                scrollToLastOrder();
+            });
+
+            // Initial call in case there are no AJAX requests
+            scrollToLastOrder();
+        });
+
+        $(document).ready(function() {
+            const orderId = new URLSearchParams(window.location.search).get('order_id');
+            if (orderId) {
+                fetchOrderDetails(orderId);
+                calculateOrderValues();
+                fetchOrderPayments(orderId);
+            }
+
+            // Set default date to today's date
+            const today = new Date().toISOString().split('T')[0];
+            $('#newPaymentDate').val(today);
+
+            function fetchOrderPayments(orderId) {
+    $.ajax({
+        url: `/get_order_payments/${orderId}`,
+        method: 'GET',
+        success: function(response) {
+            if (response.error) {
+                showAlert('Error', response.error, 'error');
+            } else {
+                $('#order_amount').val(response.order_amount);
+                const paymentTableBody = $('#paymentsTable tbody');
+                paymentTableBody.empty();
+                const isCompleted = $('#payment_status').val() === 'Completed'; // Check if payment status is 'Completed'
+                response.payments.forEach(payment => {
+                    // Disable remove button if order is completed
+                    const disableButton = isCompleted ? 'disabled' : '';
+                    const newRow = `
+                    <tr data-payment-id="${payment.paymentid}">
+                        <td>${payment.paymentid}</td>
+                        <td>${payment.paymentdate}</td>
+                        <td>${payment.amount}</td>
+                        <td>${payment.paymentmethod}</td>
+                        <td>${payment.transaction_id}</td>
+                        <td><button type="button" class="btn btn-danger btn-sm" ${disableButton} onclick="removePayment(${payment.paymentid})">Remove</button></td>
+                    </tr>`;
+                    paymentTableBody.append(newRow);
+                });
+                updatePaymentSummary();
+                updatePaymentTotal(); // Update the total
+            }
+        },
+        error: function() {
+            showAlert('Error', 'Failed to fetch payment details', 'error');
+        }
+    });
+}
+
+
+            // Fetch payment methods on page load
+            fetchPaymentMethods();
+
+            function fetchPaymentMethods() {
+                $.ajax({
+                    url: '/get_payment_methods',
+                    method: 'GET',
+                    success: function(data) {
+                        var paymentMethodSelect = $('#newPaymentMethod');
+                        paymentMethodSelect.empty(); // Clear existing options
+                        data.forEach(function(method) {
+                            paymentMethodSelect.append(new Option(method.method_name, method.method_id));
+                        });
+                    }
+                });
+            }
+
+            $(document).ready(function() {
+    // Fetch and set payment methods on modal open
+    $('#receivePaymentModal').on('show.bs.modal', function () {
+        fetchPaymentMethods();
+        resetPaymentForm(); // Reset the form every time modal is shown
+    });
+
+    // Listen for changes in payment method to toggle the requirement for Transaction ID
+    $('#newPaymentMethod').change(function() {
+        const selectedMethod = $(this).find('option:selected').text().toLowerCase();
+        if (selectedMethod === 'cash') {
+            $('#newTransactionId').prop('required', false).val('');
+            $('#newTransactionId').closest('.form-group').hide(); // Optionally hide the input field
+        } else {
+            $('#newTransactionId').prop('required', true);
+            $('#newTransactionId').closest('.form-group').show();
+        }
+    });
+});
+
+            window.addPayment = function() {
+    const paymentDate = $('#newPaymentDate').val();
+    const amount = $('#newPaymentAmount').val();
+    const paymentMethodId = $('#newPaymentMethod').val();
+    const paymentMethodName = $('#newPaymentMethod option:selected').text(); // Get the payment method name
+    const transactionId = $('#newTransactionId').val();
+    const orderId = $('#order_id').val();
+
+    $.ajax({
+        url: '/add_payment',
+        method: 'POST',
+        data: {
+            payment_date: paymentDate,
+            amount: amount,
+            payment_method_id: paymentMethodId,
+            transaction_id: transactionId,
+            order_id: orderId
+        },
+        success: function(response) {
+            if (response.success) {
+                // Append new row to the payment history table
+                const newRow = `
+                    <tr>
+                        <td>${paymentDate}</td>
+                        <td>${amount}</td>
+                        <td>${paymentMethodName}</td>
+                        <td>${transactionId}</td>
+                        <td><button type="button" class="btn btn-danger btn-sm" onclick="removePayment(this)">Remove</button></td>
+                    </tr>
+                `;
+                $('#paymentsTable tbody').append(newRow);
+                fetchOrderPayments(orderId);
+                updatePaymentTotal(); // Update the total
+                // Reset the input fields
+                $('#newPaymentDate').val('');
+                $('#newPaymentAmount').val('');
+                $('#newTransactionId').val('');
+                $('#newPaymentMethod').val($('#newPaymentMethod option:first').val());
+
+                // Clear and reset input fields after adding
+                resetPaymentForm();
+                $('#newPaymentAmount').focus(); // Set focus to the Amount field
+
+                // Update the payment summary dynamically
+                //updatePaymentSummary();
+
+                // Optionally, close the modal if needed
+                // $('#receivePaymentModal').modal('hide');
+            } else {
+                alert('Failed to add payment: ' + response.error);
+            }
+        },
+        error: function() {
+            alert('Error adding payment. Please try again.');
+        }
+    });
+}
+
+function resetPaymentForm() {
+    const today = new Date().toISOString().slice(0, 10); // Get today's date in YYYY-MM-DD format
+    $('#newPaymentDate').val(today); // Reset the payment date to today
+    $('#newPaymentAmount').val(''); // Clear the amount
+    $('#newTransactionId').val('N/A'); // Clear the transaction ID
+    $('#newPaymentMethod').val($('#newPaymentMethod option:first').val()).trigger('change'); // Reset and trigger change
+}
+
+$(document).ready(function() {
+    $('#receivePaymentModal').on('show.bs.modal', function () {
+        resetPaymentForm(); // Reset form every time modal is shown
+    });
+});
+
+function updatePaymentSummary() {
+    var totalPaid = 0;
+    var orderTotal = parseFloat($('#order_amount').val()); // Assuming you have the total order amount in an input field
+
+    // Calculate the total paid from the table rows
+    $('#paymentsTable tbody tr').each(function() {
+        var amount = parseFloat($(this).find('td:eq(1)').text()); // Amount is in the second column
+        totalPaid += amount;
+    });
+
+    var balance = orderTotal - totalPaid;
+
+    // Update the display fields
+    $('#totalPaid').val(`${totalPaid.toFixed(2)}`);
+    $('#balanceAmount').val(`${balance.toFixed(2)}`);
+}
+
+// This ensures that the modal fetches and displays updated data each time it is opened
+$('#receivePaymentModal').on('show.bs.modal', function () {
+    const orderId = $('#order_id').val();
+    if (orderId) {
+        fetchOrderPayments(orderId);
+    }
+});
+
+
+            function updatePaymentSummary() {
+                var totalPaid = 0;
+                var orderTotal = parseFloat($('#order_amount').val());  // Assuming you have the total order amount in an input field
+
+                // Calculate the total paid from the table rows
+                $('#paymentsTable tbody tr').each(function() {
+                    var amount = parseFloat($(this).find('td:eq(2)').text());  // Amount is in the second column
+                    totalPaid += amount;
+                });
+
+                var balance = orderTotal - totalPaid;
+
+                // Update the display fields
+                $('#totalPaid').val(`${totalPaid.toFixed(2)}`);
+                $('#balanceAmount').val(`${balance.toFixed(2)}`);
+            }
+        });
+
+        function updateTotalAndBalance(totalPaid, orderAmount) {
+            $('#totalPaid').text(totalPaid.toFixed(2));
+            const balance = orderAmount - totalPaid;
+            $('#balanceAmount').text(balance.toFixed(2));
+        }
+
+        function calculateAndDisplayTotals() {
+            let totalAmount = 0;
+            let totalDiscount = 0;
+            $('#productTable tbody tr').each(function() {
+                const unitPrice = parseFloat($(this).find("input[name='Unit_Price[]']").val());
+                const quantity = parseFloat($(this).find("input[name='Quantity[]']").val());
+                const discount = parseFloat($(this).find("input[name='discount[]']").val()) || 0;
+
+                totalAmount += unitPrice * quantity;
+                totalDiscount += discount * quantity;
+            });
+
+            $('#order_amount').val(totalAmount.toFixed(2));
+            $('#total_discount').val(totalDiscount.toFixed(2));
+            $('#balanceAmount').val((totalAmount - totalDiscount - parseFloat($('#totalPaid').val())).toFixed(2));
+        }
+
+        function calculateOrderValues() {
+            let totalAmount = 0;
+            let totalDiscount = 0;
+
+            // Loop through each product row to calculate totals
+            $('#productTable tbody tr').each(function() {
+                var quantity = parseFloat($(this).find("input[name='Quantity[]']").val()) || 0;
+                var unitPrice = parseFloat($(this).find("input[name='Unit_Price[]']").val()) || 0;
+                var discount = parseFloat($(this).find("input[name='discount[]']").val()) || 0;
+
+                totalAmount += quantity * unitPrice;
+                totalDiscount += discount;
+            });
+
+            // Update the DOM elements
+            $('#order_amount').val(totalAmount.toFixed(2));
+            $('#total_discount').val(totalDiscount.toFixed(2));
+
+            // Calculate balance assuming Total Paid is correctly updated elsewhere
+            var totalPaid = parseFloat($('#totalPaid').val()) || 0;
+            var balance = totalAmount - totalDiscount - totalPaid;
+            $('#balanceAmount').val(balance.toFixed(2));
+        }
+
+        $(document).ready(function() {
+            $("#searchOrderForm").submit(function(event) {
+                event.preventDefault(); // Prevent the form from submitting through the browser
+
+                var orderId = $("#searchOrderId").val(); // Get the value from the input field
+                if(orderId) {
+                    fetchOrderDetailsById(orderId); // Function to fetch and display details
+                } else {
+                    alert("Please enter an Order ID.");
+                }
+            });
+        });
+
+        function fetchOrderDetailsById(orderId) {
+            window.location.href = `/add_order?order_id=${orderId}`;
+        }
+
+        function displayOrderDetails(orderDetails) {
+            // This function would update the DOM with the order details
+            console.log(orderDetails); // Log the details or update the DOM as required
+            // For example:
+            $("#orderDetailsContainer").html(`<p>Order ID: ${orderDetails.id}</p><p>Customer Name: ${orderDetails.customerName}</p>`);
+        }
+
+function calculateAndDisplayTotals() {
+    let totalBill = 0;
+    let totalDiscount = 0;
+    let grandTotal = 0;
+    let totalPaid = parseFloat($('#totalPaid').val()) || 0;
+
+    $('#productTable tbody tr').each(function() {
+        const unitPrice = parseFloat($(this).find("input[name='Unit_Price[]']").val()) || 0;
+        const quantity = parseFloat($(this).find("input[name='Quantity[]']").val()) || 0;
+        const discount = parseFloat($(this).find("input[name='discount[]']").val()) || 0;
+        const totalAmount = (unitPrice * quantity) - discount;
+
+        totalBill += (unitPrice * quantity);
+        totalDiscount += discount;
+        grandTotal += totalAmount;
+    });
+
+    $('#totalBill').val(totalBill.toFixed(2));
+    $('#totalDiscount').val(totalDiscount.toFixed(2));
+    $('#grandTotal').val(grandTotal.toFixed(2));
+
+    let balanceAmount = grandTotal - totalPaid;
+    $('#balanceAmount').val(balanceAmount.toFixed(2));
+
+    console.log("Total Bill: " + totalBill);
+    console.log("Total Discount: " + totalDiscount);
+    console.log("Grand Total: " + grandTotal);
+    console.log("Total Paid: " + totalPaid);
+    console.log("Balance Amount: " + balanceAmount);
+
+    updateBalanceColor();  // Ensure this is called right after calculating totals
+}
+
+function updateBalanceColor() {
+    var balance = parseFloat($('#balanceAmount').val());
+    console.log("Current Balance for Color Update: " + balance);
+
+    if (balance > 0) {
+        $('#balanceAmount').css('color', 'red');
+    } else if (balance < 0) {
+        $('#balanceAmount').css('color', 'blue');
+    } else {
+        $('#balanceAmount').css('color', 'green');
+    }
+}
+
+// Call this function whenever the balance might change
+$(document).on('input change', '#productTable input, #totalPaid', function() {
+    calculateAndDisplayTotals(); // Recalculate totals first
+});
+
+// Also call these functions when the page loads
+$(document).ready(function() {
+    calculateAndDisplayTotals();
+});
+
+$(document).ready(function() {
+    $('#receivePaymentBtn').on('click', function() {
+        // Assume these values are globally available or fetched from somewhere else
+        var orderAmount = $('#order_amount').val(); // Total order amount
+        var paidAmount = $('#totalPaid').val(); // Total paid so far
+        var balanceAmount = parseFloat(orderAmount) - parseFloat(paidAmount); // Calculate balance
+
+        $('#modal_order_amount').val(orderAmount);
+        $('#paid_amount').val(paidAmount);
+        $('#balance_amount').val(balanceAmount.toFixed(2));
+
+        $('#receivePaymentModal').modal('show');
+    });
+
+    // More code here for addPayment() and other functionalities...
+});
+
+function updatePaymentTotal() {
+    let total = 0;
+    $('#paymentsTable tbody tr').each(function() {
+        total += parseFloat($(this).find('td:eq(1)').text()); // Assume the amount is in the second column
+    });
+    $('#totalPayments').text(total.toFixed(2));
+}
+
+
+function removePayment(paymentId) {
+    // Fetch the current payment status
+    const paymentStatus = $('#payment_status').val(); // Assuming payment_status is an element with the payment status value
+
+    // Check if the payment status is '2' (Completed)
+    if (paymentStatus == '2') {
+        showAlert('Warning', 'Payments on completed orders cannot be altered, to modify payments, notify an Admin to cancel this order', 'warning');
+        return; // Do not proceed if payment status is 'Completed'
+    }
+
+    if (confirm('Are you sure you want to delete this payment?')) {
+        $.ajax({
+            url: '/delete_payment',  // Ensure this URL is correctly routed in your Flask app
+            method: 'POST',
+            data: { paymentId: paymentId },
+            success: function(response) {
+                if (response.success) {
+                    $(`tr[data-payment-id="${paymentId}"]`).remove();
+                    updatePaymentTotal();
+                    updatePaymentSummary();
+                    alert('Payment successfully deleted.');
+
+                    // Close and reopen the modal to refresh the payments list
+                    $('#receivePaymentModal').modal('hide'); // Hide the modal
+                    setTimeout(function() {
+                        fetchOrderPayments(orderId);  // Reload the payments to refresh data
+                        $('#receivePaymentModal').modal('show'); // Show the modal again
+                    }, 500); // Delay to ensure modal transitions smoothly
+                } else {
+                    alert('Failed to delete payment: ' + response.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.log(xhr.responseText);  // Log the server's error message to console
+                alert('Error communicating with the server. Please try again.');
+            }
+        });
+    }
+}
+
+// Helper function to show alerts
+function showAlert(title, text, icon) {
+    Swal.fire({
+        title: title,
+        text: text,
+        icon: icon,
+        showConfirmButton: false,
+        timer: 3000
+    });
+}
+
+
+function refreshPayments(orderId) {
+    fetchOrderPayments(orderId);  // Reloads payment data from the server
+}
+
+$// Ensure jQuery and SweetAlert are loaded
+console.log("Ensuring jQuery and SweetAlert are loaded...");
+console.log("jQuery version:", $.fn.jquery);
+console.log("SweetAlert version:", Swal.version);
+
+$(document).ready(function() {
+    console.log("Document is ready...");
+
+    $('#finalizeOrderButton').on('click', function() {
+        console.log("Finalize Order button clicked...");
+
+        var orderId = $('#order_id').val();
+        var branchId = $('#branch_id').val();
+        var source = $('#source').val();
+        var receivingbranchId = $('#receiving_branch_id').val();
+
+
+        console.log('Order ID:', orderId);
+        console.log('Branch ID:', branchId);
+
+        if (!orderId) {
+            Swal.fire('Error', 'Order ID is missing. Cannot finalize the order.', 'error');
+            return;
+        }
+
+        if (!branchId) {
+            Swal.fire('Error', 'Branch ID is missing. Cannot finalize the order.', 'error');
+            return;
+        }
+
+        finalizeOrder(orderId, branchId, source, receivingbranchId);
+    });
+});
+
+function finalizeOrder(orderId, branchId, source, receivingbranchId) {
+    console.log("Finalizing order...");
+    $.ajax({
+        url: '/finalize_order', // Adjust this to your actual endpoint
+        type: 'POST',
+        data: JSON.stringify({ orderId: orderId, branchId: branchId, source: source, receivingbranchId: receivingbranchId }),  // Include branch_id in the request payload
+        contentType: 'application/json',
+        success: function(response) {
+            console.log("Order finalized successfully:", response);
+            Swal.fire({
+                icon: 'success',
+                title: 'Order Finalized',
+                text: 'The order has been finalized successfully.',
+                confirmButtonText: 'OK'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.reload(); // This will refresh the page after clicking "OK" in the alert
+                }
+            });
+        },
+        error: function(xhr) {
+            console.log("Error finalizing order:", xhr);
+            let errorMessage = 'Failed to finalize the order. Please try again.';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: errorMessage
+            });
+        }
+    });
+}
+
+
+// Function to update dropdown colors
+function updateDropdownColor(selector) {
+    $(selector).each(function() {
+        var text = $(this).find('option:selected').text(); // Get the current text of the selected option
+        // Apply CSS based on the selected option
+        switch (text) {
+            case 'Completed':
+            case 'Physical Store':
+            case 'Retail':
+            case 'Delivered':
+            case 'Product':
+                $(this).css('background-color', '#c3e6cb'); // Green
+                break;
+
+            case 'Mobile App':
+            case 'Service':
+            case 'Promo':
+            case 'Processing':
+
+                $(this).css('background-color', '#ffeeba'); // Yellow
+                break;
+            case 'Pending':
+            case 'Cancelled':
+            case 'Failed':
+            case 'Refunded':
+            case 'Stock-Out':
+            case 'Stock-In':
+                $(this).css('background-color', '#f5c6cb'); // Red
+                break;
+            case 'Shipped':
+            case 'Installment':
+            case 'Online Store':
+            case 'Wholesale':
+                $(this).css('background-color', '#b8daff'); // Blue
+                break;
+            default:
+                $(this).css('background-color', 'transparent'); // Default no color
+        }
+    });
+}
+
+// Function to apply color changes
+function applyColorChanges() {
+    updateDropdownColor('#payment_status');
+    updateDropdownColor('#order_status');
+    updateDropdownColor('#source');
+    updateDropdownColor('#pricing_mode');
+    updateDropdownColor('#service_type');
+}
+
+// Observer to monitor changes and apply color updates
+const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        if (mutation.attributeName === "style") {
+            applyColorChanges();
+        }
+    });
+});
+
+const config = { attributes: true, childList: true, characterData: true };
+
+// Function to initialize color updates and observers
+function initializeDropdownColorUpdates() {
+    // Initial apply and observer setup
+    applyColorChanges();
+    $("#payment_status, #order_status, #source, #pricing_mode, #service_type").each(function() {
+        observer.observe(this, config);
+    });
+
+    // Apply changes on dropdown change
+    $('#payment_status, #order_status, #source, #pricing_mode, #service_type').change(applyColorChanges);
+}
+
+// Function to update dropdown colors manually, can be called after loading order details
+function updateDropdownsAfterLoading() {
+    updateDropdownColor('#payment_status');
+    updateDropdownColor('#order_status');
+}
+
+// Initialize color updates when the document is ready
+$(document).ready(function() {
+    initializeDropdownColorUpdates();
+});
+
+
+function disableOrderFieldsAndButtons() {
+    console.log("Disabling order fields and buttons...");
+
+    // Disable buttons
+    $('#saveOrderButton').prop('disabled', true);
+    $('#finalizeOrderButton').prop('disabled', true);
+    $('button[onclick="addProductRow()"]').prop('disabled', true);
+
+    // Disable fields
+    $('#Customer_Name').prop('readonly', true);
+    $('#source').prop('disabled', true);
+    $('#pricing_mode').prop('disabled', true);
+    $('#service_type').prop('disabled', true);
+    $('#payment_status').prop('disabled', true);
+    $('#Product_Code').prop('disabled', true);
+    $('#Product').prop('disabled', true);
+    $('#Variant').prop('disabled', true);
+    $('#Quantity').prop('disabled', true);
+    $('#receving_branch_id').prop('disabled', true);
+    $('#branch_id').prop('disabled', true);
+
+    // Disable remove product buttons
+    $('.btn-danger').prop('disabled', true);
+
+
+
+    // Log the status of buttons to ensure they are disabled
+    console.log("Save Order Button Disabled:", $('#saveOrderButton').prop('disabled'));
+    console.log("Finalize Order Button Disabled:", $('#finalizeOrderButton').prop('disabled'));
+    $('#paymentsTable tbody tr').each(function() {
+        console.log("Remove Payment Button Disabled:", $(this).find('button.btn-danger').prop('disabled'));
+    });
+}
+
+
+function updateDropdownsAfterLoading() {
+    updateDropdownColor('#payment_status');
+    updateDropdownColor('#order_status');
+}
+
+$(document).ready(function() {
+    $('#pricing_mode').on('focus', function() {
+        const productCount = $('#productTable tbody tr').length; // Count the number of products in the order
+
+        if (productCount > 0) {
+            $(this).prop('disabled', true);
+            showAlert('Notice', 'Pricing mode field disabled due to existing products in the order. To change pricing mode, remove all products in this order or consult an Admin. Thank you', 'Notice');
+        }
+    });
+});
+
+function showAlert(title, message, type) {
+    Swal.fire({
+        title: title,
+        text: message,
+        icon: type
+    });
+}
+
+
+
+
+$(document).ready(function() {
+    function checkAndLockFields() {
+        $('#payment_status').prop('disabled', true);
+        const paymentStatus = $('#payment_status').val(); // Get the payment status value
+        if (paymentStatus == '2') { // Assuming '2' is the value for 'Completed'
+            // Lock the fields
+            $('#pricing_mode').prop('disabled', true);
+            $('#service_type').prop('disabled', true);
+            $('#source').prop('disabled', true);
+            $('#payment_status').prop('disabled', true);
+            $('#receiving_branch_id').prop('disabled', true);
+            $('#branch_id').prop('disabled', true);
+            showAlert('Info', 'These fields are locked because the order status is completed.', 'info');
+        }
+    }
+
+    // Bind the function to the focus event of the fields
+    $('#pricing_mode, #service_type, #source, #payment_status, #receiving_branch_id, #branch_id').on('focus', function() {
+        checkAndLockFields();
+    });
+
+    // Helper function to show alerts
+    function showAlert(title, text, icon) {
+        Swal.fire({
+            title: title,
+            text: text,
+            icon: icon,
+            showConfirmButton: false,
+            timer: 3000
+        });
+    }
+});
+
+
+$(document).ready(function() {
+    // Set the order ID in the modal when it is opened
+    $('#sendEmailModal').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget); // Button that triggered the modal
+        var orderId = $('#order_id').val(); // Retrieve order ID from the form
+
+        var modal = $(this);
+        modal.find('.modal-body #orderId').val(orderId);
+    });
+
+    // Handle the form submission
+    $('#sendEmailForm').submit(function(event) {
+        event.preventDefault();
+
+        var formData = {
+            recipient: $('#emailRecipient').val(),
+            subject: $('#emailSubject').val(),
+            message: $('#emailMessage').val(),
+            order_id: $('#orderId').val()
+        };
+
+        $.ajax({
+            type: 'POST',
+            url: '/send_email', // Adjust this to your email sending endpoint
+            data: JSON.stringify(formData),
+            contentType: 'application/json',
+            success: function(response) {
+                if (response.success) {
+                    $('#sendEmailModal').modal('hide');
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Email Sent',
+                        text: 'The email has been sent successfully.'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Failed to send the email. Please try again.'
+                    });
+                }
+            },
+            error: function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to send the email. Please try again.'
+                });
+            }
+        });
+    });
+});
+
+
+ $(document).ready(function() {
+        const roleId = {{ role_id }};
+        const branchField = $('#branch_id');
+
+        // Populate branch_id field with the current branch ID
+        const currentBranchId = {{ branch_id }};
+        branchField.val(currentBranchId);
+
+        // Disable the branch field based on the role
+        if (roleId !== 1) {
+            branchField.prop('disabled', true);
+        }
+    });
+
+
+$(document).ready(function() {
+        $('#source').change(function() {
+            if ($(this).val() == 5) { // Assuming 5 is the value for "Stock-out"
+                $('#branchModal').modal('show');
+            }
+        });
+
+        $('#saveBranchButton').click(function() {
+            var selectedBranch = $('#branchSelect').val();
+            $('#receiving_branch_id').val(selectedBranch);
+            $("#saveOrderButton").click();
+            $('#branchModal').modal('hide');
+        });
+    });
+
+
+
+</script>

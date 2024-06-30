@@ -1,0 +1,40 @@
+<!-- Existing footer content -->
+<footer class="footer navbar-expand-lg navbar-dark bg-dark">
+    <div class="footer-text mx-auto">
+        <div class="form-inline">
+            <div class="input-group mr-2">
+                <div class="input-group-prepend">
+                    <span class="input-group-text font-weight-bold">Total Bill:</span>
+                </div>
+                <input type="text" readonly class="form-control" id="totalBill" value="0.00">
+            </div>
+            <div class="input-group mr-2">
+                <div class="input-group-prepend">
+                    <span class="input-group-text font-weight-bold">Total Discount:</span>
+                </div>
+                <input type="text" readonly class="form-control" id="totalDiscount" value="0.00">
+            </div>
+            <div class="input-group mr-2">
+                <div class="input-group-prepend">
+                    <span class="input-group-text font-weight-bold">Grand Total:</span>
+                </div>
+                <input type="text" readonly class="form-control" id="grandTotal" value="0.00">
+            </div>
+            <div class="input-group mr-2">
+                <div class="input-group-prepend">
+                    <span class="input-group-text font-weight-bold">Total Paid:</span>
+                </div>
+                <input type="text" readonly class="form-control" id="totalPaid" value="0.00">
+            </div>
+            <div class="input-group mr-2">
+                <div class="input-group-prepend">
+                    <span class="input-group-text font-weight-bold">Balance:</span>
+                </div>
+                <input type="text" readonly class="form-control" id="balanceAmount" value="0.00">
+            </div>
+            <button type="button" class="btn btn-success mr-3" id="finalizeOrderButton">Finalize Order</button>
+            <button type="button" class="btn btn-primary mr-3" id="approveOrderButton" style="display: none;">Approve</button>
+        </div>
+    </div>
+</footer>
+
